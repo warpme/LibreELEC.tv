@@ -38,8 +38,7 @@ PKG_CONFIGURE_OPTS_HOST="--prefix=$ROOT/$TOOLCHAIN \
              --enable-unicode-properties \
              --with-gnu-ld"
 
-PKG_CONFIGURE_OPTS_TARGET="--disable-shared \
-             --enable-static \
+PKG_CONFIGURE_OPTS_TARGET="--prefix=/usr \
              --enable-utf8 \
              --enable-pcre16 \
              --enable-unicode-properties \
