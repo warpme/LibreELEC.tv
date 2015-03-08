@@ -1,0 +1,209 @@
+diff -Naur a/skins/Standard/index.html.tmpl b/skins/Standard/index.html.tmpl
+--- a/skins/Standard/index.html.tmpl	2015-01-28 07:18:08.000000000 -0800
++++ b/skins/Standard/index.html.tmpl	2016-11-02 01:40:14.257023079 -0700
+@@ -50,14 +50,6 @@
+                 <td class="stats_data">$current.outTemp</td>
+               </tr>
+               <tr>
+-                <td class="stats_label">Wind Chill</td>
+-                <td class="stats_data">$current.windchill</td>
+-              </tr>
+-              <tr>
+-                <td class="stats_label">Heat Index</td>
+-                <td class="stats_data">$current.heatindex</td>
+-              </tr>
+-              <tr>
+                 <td class="stats_label">Dewpoint</td>
+                 <td class="stats_data">$current.dewpoint</td>
+               </tr>
+@@ -73,18 +65,6 @@
+                 <td class="stats_label">Barometer Trend ($trend.time_delta.hour.format("%.0f"))</td>
+                 <td class="stats_data">$trend.barometer</td>
+               </tr>
+-              <tr>
+-                <td class="stats_label">Wind</td>
+-                <td class="stats_data">$current.windSpeed from $current.windDir ($current.windDir.ordinal_compass)</td>
+-              </tr>
+-              <tr>
+-                <td class="stats_label">Rain Rate</td>
+-                <td class="stats_data">$current.rainRate</td>
+-              </tr>
+-              <tr>
+-                <td class="stats_label">Inside Temperature</td>
+-                <td class="stats_data">$current.inTemp</td>
+-              </tr>
+               #if $day.extraTemp1.has_data
+               <tr>
+                 <td class="stats_label">Pond Temperature</td>
+@@ -133,16 +113,6 @@
+               </tr>
+               <tr>
+                 <td class="stats_label">
+-                  High Heat Index<br/>
+-                  Low Wind Chill
+-                </td>
+-                <td class="stats_data">
+-                  $day.heatindex.max at $day.heatindex.maxtime<br/>
+-                  $day.windchill.min at $day.windchill.mintime
+-                </td>
+-              </tr>
+-              <tr>
+-                <td class="stats_label">
+                   High Humidity<br/>
+                   Low Humidity
+                 </td>
+@@ -171,59 +141,6 @@
+                   $day.barometer.min at $day.barometer.mintime
+                 </td>
+               </tr>
+-              <tr>
+-                <td class="stats_label">Today's Rain</td>
+-                <td class="stats_data">$day.rain.sum</td>
+-              </tr>
+-              <tr>
+-                <td class="stats_label">High Rain Rate</td>
+-                <td class="stats_data">$day.rainRate.max at $day.rainRate.maxtime</td>
+-              </tr>
+-              <tr>
+-                <td class="stats_label">
+-                  High Wind
+-                </td>
+-                <td class="stats_data">
+-                  $day.wind.max from $day.wind.gustdir at $day.wind.maxtime
+-                </td>
+-              </tr>
+-              <tr>
+-                <td class="stats_label">
+-                  Average Wind
+-                </td>
+-                <td class="stats_data">
+-                  $day.wind.avg
+-                </td>
+-              </tr>
+-              <tr>
+-                <td class="stats_label">
+-                  RMS Wind
+-                </td>
+-                <td class="stats_data">
+-                  $day.wind.rms
+-                </td>
+-              </tr>
+-
+-              <tr>
+-                <td class="stats_label">
+-                  Vector Average Speed<br/>
+-                  Vector Average Direction
+-                </td>
+-                <td class="stats_data">
+-                  $day.wind.vecavg<br/>
+-                  $day.wind.vecdir
+-                </td>
+-              </tr>
+-
+-              <tr>
+-                <td class="stats_label">
+-                  High Inside Temperature<br/>
+-                  Low Inside Temperature
+-                </td>
+-                <td class="stats_data">
+-                  $day.inTemp.max at $day.inTemp.maxtime<br/>
+-                  $day.inTemp.min at $day.inTemp.mintime
+-                </td>
+               </tr>
+               #if $day.extraTemp1.has_data
+               <tr>
+@@ -482,13 +399,7 @@
+         
+         <div id="plots">
+           <img src="daytempdew.png"   alt="temperatures" />
+-          <img src="daytempchill.png" alt="heatchill" />
+-          <img src="dayrain.png"      alt="rain" />
+-          <img src="daywind.png"      alt="wind" />
+           <img src="daybarometer.png" alt="barometer"/>
+-          <img src="daywinddir.png"   alt="Hi Wind" />
+-          <img src="dayinside.png"    alt="Inside" />
+-          <img src="daywindvec.png"   alt="Wind Vector" />
+           #if $day.radiation.has_data
+           <img src="dayradiation.png" alt="Radiation" />
+           #end if
+diff -Naur a/skins/Standard/mobile.html.tmpl b/skins/Standard/mobile.html.tmpl
+--- a/skins/Standard/mobile.html.tmpl	2014-11-29 10:15:27.000000000 -0800
++++ b/skins/Standard/mobile.html.tmpl	2016-11-02 01:44:36.475512273 -0700
+@@ -51,24 +51,14 @@
+         <tr>            
+ 		<td>Low Temp:</td><td class="data"> $day.outTemp.min at $day.outTemp.mintime </td>
+ 	</tr>
+-        <tr class="alt">
+-		<td><a href="daytempchill.png">Heat Index / Wind Chill:</a></td><td class="data"> $current.heatindex / $current.windchill </td>
+-	</tr>
+-        <tr>
+-		<td>Humidity:</td><td class="data"> $current.outHumidity </td></tr>
+-	</tr>
+-        <tr class="alt">
+-		<td><a href="dayrain.png">Rainfall:</a></td><td class="data"> $day.rain.sum </td>
+-	</tr>
+         <tr>
+-		<td>High Rain Rate:</td><td class="data"> $day.rainRate.max at $day.rainRate.maxtime </td>
+-	</tr>
+-        <tr class="alt">
+-		<td><a href="daywind.png">Wind Speed:</a></td><td class="data"> $current.windSpeed </td>
+-	</tr>
+-	<tr>            
+-		<td>High Wind Speed:</td><td class="data"> $day.wind.max at $day.wind.maxtime </td>
++		<td>Humidity:</td><td class="data"> $current.outHumidity </td>
+ 	</tr>
++        #if $day.UV.has_data
++          <tr>
++                <td>UV:</td><td class="data"> $current.UV </td>
++          </tr>
++        #end if
+     </table>
+ </div>
+ 
+diff -Naur a/skins/Standard/skin.conf b/skins/Standard/skin.conf
+--- a/skins/Standard/skin.conf	2014-11-29 10:15:27.000000000 -0800
++++ b/skins/Standard/skin.conf	2016-11-02 01:36:01.089619788 -0700
+@@ -29,18 +29,18 @@
+         # NB: The unit is always in the singular. I.e., 'mile_per_hour',
+         # NOT 'miles_per_hour'
+ 
+-        group_altitude     = foot                 # Options are 'foot' or 'meter'
+-        group_degree_day   = degree_F_day         # Options are 'degree_F_day' or 'degree_C_day'
++        group_altitude     = meter                # Options are 'foot' or 'meter'
++        group_degree_day   = degree_C_day         # Options are 'degree_F_day' or 'degree_C_day'
+         group_direction    = degree_compass
+         group_moisture     = centibar
+         group_percent      = percent
+-        group_pressure     = inHg                 # Options are 'inHg', 'mmHg', 'mbar', or 'hPa'
++        group_pressure     = mbar                 # Options are 'inHg', 'mmHg', 'mbar', or 'hPa'
+         group_radiation    = watt_per_meter_squared
+-        group_rain         = inch                 # Options are 'inch', 'cm', or 'mm'
+-        group_rainrate     = inch_per_hour        # Options are 'inch_per_hour', 'cm_per_hour', or 'mm_per_hour'
+-        group_speed        = mile_per_hour        # Options are 'mile_per_hour', 'km_per_hour', 'knot', or 'meter_per_second'
+-        group_speed2       = mile_per_hour2       # Options are 'mile_per_hour2', 'km_per_hour2', 'knot2', or 'meter_per_second2'
+-        group_temperature  = degree_F             # Options are 'degree_F' or 'degree_C'
++        group_rain         = mm                   # Options are 'inch', 'cm', or 'mm'
++        group_rainrate     = mm_per_hour          # Options are 'inch_per_hour', 'cm_per_hour', or 'mm_per_hour'
++        group_speed        = meter_per_second     # Options are 'mile_per_hour', 'km_per_hour', 'knot', or 'meter_per_second'
++        group_speed2       = meter_per_second2    # Options are 'mile_per_hour2', 'km_per_hour2', 'knot2', or 'meter_per_second2'
++        group_temperature  = degree_C             # Options are 'degree_F' or 'degree_C'
+         group_uv           = uv_index
+         group_volt         = volt
+ 
+diff -Naur a/skins/Standard/smartphone/index.html.tmpl b/skins/Standard/smartphone/index.html.tmpl
+--- a/skins/Standard/smartphone/index.html.tmpl	2014-10-24 11:39:39.000000000 -0700
++++ b/skins/Standard/smartphone/index.html.tmpl	2016-11-02 01:47:53.221379964 -0700
+@@ -22,9 +22,11 @@
+       <ul data-role="listview" data-inset="true" data-divider-theme="c">
+ 	<li data-role="list-divider">Time: $current.dateTime</li>
+         <li><a href="temp_outside.html">Temp: $current.outTemp [$day.outTemp.min, $day.outTemp.max]</a></li>
+-        <li><a href="rain.html">Rain: $current.rainRate ($day.rain.sum)</a></li>
+ 	<li><a href="barometer.html">Barometer: $current.barometer</a></li>
+-	<li><a href="wind.html">Wind: $current.windSpeed from $current.windDir</a></li>
++        <li><a>Humidity: $current.outHumidity</a></li>
++        #if $day.UV.has_data
++          <li><a>UV: $current.UV</a></li>
++        #end if
+       </ul>
+ 
+       <ul data-role="listview" data-inset="true" data-divider-theme="b">

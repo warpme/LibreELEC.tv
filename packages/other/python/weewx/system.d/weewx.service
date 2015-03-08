@@ -1,0 +1,16 @@
+[Unit]
+Description=weewx
+After=multi-user.target
+Requires=multi-user.target
+
+[Service]
+ExecStartPre=-/bin/sh -c ". /usr/lib/weewx/weewx-config"
+ExecStart=/usr/bin/python /usr/bin/weewxd --daemon /storage/.config/weewx/weewx.conf
+ExecReload=/bin/kill -HUP $MAINPID
+Type=forking
+PIDFile=/var/run/weewx.pid
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical.target

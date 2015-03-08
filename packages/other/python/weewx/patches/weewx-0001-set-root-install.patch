@@ -1,0 +1,12 @@
+diff -Naur weewx-3.1.0.orig/setup.cfg weewx-3.1.0/setup.cfg
+--- weewx-3.1.0.orig/setup.cfg	2015-02-16 18:48:56.054894957 -0800
++++ weewx-3.1.0/setup.cfg	2015-02-16 18:49:09.930115278 -0800
+@@ -4,7 +4,7 @@
+ [install]
+ 
+ # Set the following to the root directory where weewx should be installed
+-home = /home/weewx
++home = /usr/share/weewx
+ 
+ # Given the value of 'home' above, the following are reasonable values
+ prefix =

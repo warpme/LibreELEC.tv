@@ -1,0 +1,15 @@
+diff -Naur weewx-3.1.0.orig/setup.py weewx-3.1.0/setup.py
+--- weewx-3.1.0.orig/setup.py	2015-02-20 13:43:45.953344768 -0800
++++ weewx-3.1.0/setup.py	2015-02-20 13:44:35.961879007 -0800
+@@ -868,10 +868,7 @@
+ 
+ def get_driver_infos():
+     """scan the drivers folder and list each driver with its package"""
+-    if this_dir == '/usr/share/weewx' or this_dir == '/usr/bin':
+-        ddir = '/usr/share/weewx/weewx/drivers'
+-    else:
+-        ddir = os.path.join(this_dir, 'bin/weewx/drivers')
++    ddir = os.path.join(this_dir, 'bin/weewx/drivers')
+     drivers = [ f for f in os.listdir(ddir) if os.path.isfile(os.path.join(ddir, f)) and f != '__init__.py' and f[-3:] == '.py' ]
+ 
+     # adjust system path so we can load the drivers

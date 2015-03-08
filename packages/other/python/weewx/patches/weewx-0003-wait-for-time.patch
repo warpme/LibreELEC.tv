@@ -1,0 +1,11 @@
+diff -Naur weewx-3.1.0.orig/bin/user/extensions.py weewx-3.1.0/bin/user/extensions.py
+--- weewx-3.1.0.orig/bin/user/extensions.py	2015-02-18 14:07:11.190191106 -0800
++++ weewx-3.1.0/bin/user/extensions.py	2015-02-18 14:07:49.791688259 -0800
+@@ -18,3 +18,7 @@
+ # Other options are possible. See:
+ # http://docs.python.org/2/library/locale.html#locale.setlocale
+ locale.setlocale(locale.LC_ALL, '')
++
++import time
++while time.time() < 946684800:
++    time.sleep(0.5)

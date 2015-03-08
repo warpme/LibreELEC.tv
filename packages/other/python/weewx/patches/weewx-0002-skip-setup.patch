@@ -1,0 +1,26 @@
+diff -Naur weewx-3.1.0.orig/setup.py weewx-3.1.0/setup.py
+--- weewx-3.1.0.orig/setup.py	2015-02-13 09:46:34.504378152 -0800
++++ weewx-3.1.0/setup.py	2015-02-13 09:47:39.871256499 -0800
+@@ -1011,21 +1011,7 @@
+     # FIXME: if someone specifies --home or --prefix then this will break
+ 
+     # try to find the directory in which weewx.conf is or will be installed
+-    idir = None
+-    fn = os.path.join(this_dir, 'setup.cfg')
+-    if os.path.exists(fn):
+-        # look in the location specified by setup.cfg
+-        setup_dict = configobj.ConfigObj(fn)
+-        if ('install' in setup_dict and
+-            setup_dict['install'].get('home') is not None):
+-            idir = setup_dict['install'].get('home')
+-    elif this_dir == '/usr/share/weewx' or this_dir == '/usr/bin':
+-        # this is a deb or rpm install
+-        idir = '/etc/weewx'
+-    else:
+-        idir = this_dir
+-    if idir is None:
+-        return None
++    idir = os.getcwd()
+     return "%s/weewx.conf" % idir
+ 
+ 
