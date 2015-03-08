@@ -1,0 +1,11 @@
+[Unit]
+Description=Lighttpd Daemon
+After=network.target
+
+[Service]
+ExecStartPre=-/bin/sh -c ". /usr/lib/lighttpd/lighttpd-config"
+ExecStartPre=/usr/sbin/lighttpd -t -f /storage/.config/lighttpd/lighttpd.conf
+ExecStart=/usr/sbin/lighttpd -D -f /storage/.config/lighttpd/lighttpd.conf
+
+[Install]
+WantedBy=multi-user.target
