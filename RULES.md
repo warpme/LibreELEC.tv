@@ -1,3 +1,5 @@
+This document pertains to the entire LibreELEC tree and all of it's branches.
+
 #### Table of Contents
 
 - [Package Version Bumps](https://github.com/LibreELEC/LibreELEC.tv/blob/master/RULES.md#package-version-bumps)
@@ -12,13 +14,11 @@
 
 ## Package Version Bumps
 
-This document pertains to the entire LibreELEC tree and all of it's branches.
-
 #### LibreELEC Testing Window
 
 Anything listed in the [Major Packages](https://github.com/LibreELEC/LibreELEC.tv/blob/master/RULES.md#major-packages) section **MUST** be submitted as a PR and reviewed.
 
-Anything listed in the [Major Packages](https://github.com/LibreELEC/LibreELEC.tv/blob/master/RULES.md#major-packages) section will **NOT** be bumped unless there is unanimous support for it.
+Anything listed in the [Major Packages](https://github.com/LibreELEC/LibreELEC.tv/blob/master/RULES.md#major-packages) section will **NOT** be bumped unless there is majority support for it.
 
 Anything listed in the [Minor Packages](https://github.com/LibreELEC/LibreELEC.tv/blob/master/RULES.md#minor-packages) section may be bumped
 
@@ -43,9 +43,20 @@ Once an LibreELEC release has entered beta anything in the [Minor Packages](http
 - xf86-video-nvidia
 - xorg-server
 
+- VDR
+- boblightd
+
 #### Minor Packages
 
 Anything not listed in the [Major Packages](https://github.com/LibreELEC/LibreELEC.tv/blob/master/RULES.md#major-packages) section
+
+## Commits
+
+All commits **must** be submitted as a pull request
+
+## Pull Requests
+
+Merging can only be done so after the pull request has been reviewed and signed off by the submitter and a team member
 
 ## Fixes
 
