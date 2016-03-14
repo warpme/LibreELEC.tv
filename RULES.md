@@ -14,6 +14,11 @@ This document pertains to the entire LibreELEC tree and all of it's branches.
 
 ## Package Version Bumps
 
+If a package version is broken it must be signified with a comment stating what is broken and possibly a linked bug report.
+```
+# version 1.23 is broken on some systems, see https://bug.report.com/123456
+```
+
 #### LibreELEC Testing Window
 
 Anything listed in the [Major Packages](https://github.com/LibreELEC/LibreELEC.tv/blob/master/RULES.md#major-packages) section **MUST** be submitted as a PR and reviewed.
@@ -53,6 +58,17 @@ Anything not listed in the [Major Packages](https://github.com/LibreELEC/LibreEL
 ## Commits
 
 All commits **must** be submitted as a pull request
+
+All commits **must** be formatted similar to as follows
+```
+RPi2/options: enable some option
+```
+```
+kodi: add patch to fix something
+```
+```
+systemd: update to 229
+```
 
 ## Pull Requests
 
