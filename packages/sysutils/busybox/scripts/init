@@ -144,6 +144,9 @@
       noram)
         SYSTEM_TORAM=no
         ;;
+      nokexec)
+        KEXEC=no
+        ;;
       live)
         LIVE=yes
         SYSLINUX_DEFAULT="live"
@@ -545,6 +548,14 @@
         debug_msg "Framebuffer splash image: $SPLASHIMAGE"
       fi
     fi
+  }
+
+  do_kexec() {
+    echo "Loading new kernel"
+    kexec -l "/flash/$IMAGE_KERNEL" --reuse-cmdline
+
+    echo "Booting new kernel"
+    kexec -e
   }
 
   do_reboot() {
@@ -975,7 +986,11 @@
     update_file "System" "$UPDATE_SYSTEM" "/flash/$IMAGE_SYSTEM"
     update_bootloader
     do_cleanup
-    do_reboot
+    if [ -f /sbin/kexec -a -n "$KEXEC" ]; then
+      do_kexec || do_reboot
+    else
+      do_reboot
+    fi
   }
 
   prepare_sysroot() {
