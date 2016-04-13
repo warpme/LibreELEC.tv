@@ -33,6 +33,9 @@ elif [ "$UBOOT_VERSION" = "hardkernel" ]; then
   PKG_SITE="https://github.com/hardkernel/u-boot"
   PKG_URL="https://github.com/hardkernel/u-boot/archive/$PKG_VERSION.tar.gz"
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET gcc-linaro-aarch64-elf:host gcc-linaro-arm-eabi:host"
+elif [ "$UBOOT_VERSION" = "sunxi" ]; then
+  PKG_VERSION="2017.07"
+  PKG_URL="ftp://ftp.denx.de/pub/u-boot/$PKG_NAME-$PKG_VERSION.tar.bz2"
 else
   exit 0
 fi
@@ -61,7 +64,7 @@ pre_configure_target() {
   MAKEFLAGS=-j1
 
 # copy compiler-gcc5.h to compiler-gcc6. for fake building
-  cp include/linux/compiler-gcc5.h include/linux/compiler-gcc6.h
+#  cp include/linux/compiler-gcc5.h include/linux/compiler-gcc6.h
 }
 
 make_target() {
@@ -144,6 +147,10 @@ makeinstall_target() {
       ;;
     imx6)
       cp -PRv $PKG_DIR/scripts/update.sh $INSTALL/usr/share/bootloader
+      ;;
+    Orange_Pi)
+      cp -PRv $PKG_DIR/scripts/update-opi.sh $INSTALL/usr/share/bootloader/update.sh
+      cp -PRv $PKG_BUILD/u-boot-sunxi-with-spl.bin $INSTALL/usr/share/bootloader
       ;;
   esac
 }
