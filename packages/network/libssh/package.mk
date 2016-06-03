@@ -36,8 +36,9 @@ configure_target() {
   cmake -DCMAKE_TOOLCHAIN_FILE=$CMAKE_CONF \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DWITH_STATIC_LIB=1 \
-        -DWITH_SERVER="OFF" \
+        -DWITH_SERVER="ON" \
         -DWITH_GCRYPT="OFF" \
+        -DWITH_GSSAPI="OFF" \
         ..
 }
 
