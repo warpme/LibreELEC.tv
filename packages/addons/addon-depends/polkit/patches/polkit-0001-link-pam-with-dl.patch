@@ -1,0 +1,21 @@
+diff -Naur a/configure.ac b/configure.ac
+--- a/configure.ac	2015-06-19 13:31:02.000000000 -0700
++++ b/configure.ac	2016-05-31 01:00:13.922520186 -0700
+@@ -348,7 +348,7 @@
+ 
+ have_pam=no
+ if test "$need_pam" = yes ; then
+-  AC_CHECK_LIB(pam, pam_start, have_pam=yes)
++  AC_CHECK_LIB(pam, pam_start, have_pam=yes, [ true ], -ldl)
+ fi
+ 
+ if test x$have_pam = xno; then
+@@ -400,7 +400,7 @@
+ 
+ AC_CHECK_HEADER(security/pam_modutil.h, [AC_DEFINE(HAVE_PAM_MODUTIL_H, [], "Have pam_modutil.h")])
+ AC_CHECK_HEADER(security/pam_ext.h, [AC_DEFINE(HAVE_PAM_EXT_H, [], "Have pam_ext.h")])
+-AC_CHECK_LIB(pam, pam_vsyslog, [AC_DEFINE(HAVE_PAM_VSYSLOG, [], "Have pam_vsyslog")])
++AC_CHECK_LIB(pam, pam_vsyslog, [AC_DEFINE(HAVE_PAM_VSYSLOG, [], "Have pam_vsyslog")], [ true ], -ldl)
+ 
+ AC_ARG_WITH(pam-module-dir, [  --with-pam-module-dir=[dirname]  directory to install PAM security module])
+ if ! test -z "$with_pam_module_dir"; then
