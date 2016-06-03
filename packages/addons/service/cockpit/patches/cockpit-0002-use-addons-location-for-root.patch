@@ -1,0 +1,26 @@
+diff -Naur a/src/ws/cockpitsshtransport.c b/src/ws/cockpitsshtransport.c
+--- a/src/ws/cockpitsshtransport.c	2016-05-27 01:00:42.000000000 -0700
++++ b/src/ws/cockpitsshtransport.c	2016-05-31 22:24:00.163962767 -0700
+@@ -1633,7 +1633,7 @@
+     case PROP_COMMAND:
+       string = g_value_get_string (value);
+       if (string == NULL)
+-        string = "cockpit-bridge";
++        string = "/storage/.kodi/addons/service.cockpit/bin/cockpit-bridge";
+       self->data->command = g_strdup (string);
+       break;
+     case PROP_HOST_KEY:
+diff -Naur a/src/ws/main.c b/src/ws/main.c
+--- a/src/ws/main.c	2016-05-27 01:00:42.000000000 -0700
++++ b/src/ws/main.c	2016-05-31 16:05:38.385353720 -0700
+@@ -90,8 +90,8 @@
+           dirs[i++] = g_strdup_printf (DATADIR "/cockpit/branding/%s-%s", os_id, os_variant_id);
+       dirs[i++] = g_strdup_printf (DATADIR "/cockpit/branding/%s", os_id);
+     }
+-  dirs[i++] = g_strdup (DATADIR "/cockpit/branding/default");
+-  dirs[i++] = g_strdup (DATADIR "/cockpit/static");
++  dirs[i++] = g_strdup ("/storage/.kodi/addons/service.cockpit/share/cockpit/branding/default");
++  dirs[i++] = g_strdup ("/storage/.kodi/addons/service.cockpit/share/cockpit/static");
+   g_assert (i <= 4);
+ 
+   roots = cockpit_web_server_resolve_roots (dirs[0], dirs[1], dirs[2], dirs[3], NULL);

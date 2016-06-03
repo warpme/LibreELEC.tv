@@ -1,0 +1,13 @@
+diff -Naur a/configure.ac b/configure.ac
+--- a/configure.ac	2016-05-27 01:00:42.000000000 -0700
++++ b/configure.ac	2016-05-31 12:25:11.493337833 -0700
+@@ -131,7 +131,8 @@
+   [AC_MSG_ERROR([Couldn't find PAM headers. Try installing pam-devel])]
+ )
+ AC_CHECK_LIB(pam, pam_open_session, [ true ],
+-  [AC_MSG_ERROR([Couldn't find PAM library. Try installing pam-devel])]
++  [AC_MSG_ERROR([Couldn't find PAM library. Try installing pam-devel])],
++  -ldl
+ )
+ PAM_LIBS="-lpam"
+ COCKPIT_SESSION_LIBS="$COCKPIT_SESSION_LIBS $PAM_LIBS"
