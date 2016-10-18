@@ -1,0 +1,12 @@
+diff -Naur a/include/bonjour/bonjourserviceregister.h b/include/bonjour/bonjourserviceregister.h
+--- a/include/bonjour/bonjourserviceregister.h	2016-10-17 12:38:40.000000000 -0700
++++ b/include/bonjour/bonjourserviceregister.h	2016-10-17 22:17:13.797463064 -0700
+@@ -34,7 +34,7 @@
+ #include "bonjourrecord.h"
+ class QSocketNotifier;
+ 
+-#include <dns_sd.h>
++#include <avahi-compat-libdns_sd/dns_sd.h>
+ 
+ class BonjourServiceRegister : public QObject
+ {
