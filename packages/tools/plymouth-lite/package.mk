@@ -56,7 +56,7 @@ makeinstall_init() {
       cp $DISTRO_DIR/$DISTRO/splash/*.png $INSTALL/splash
     elif ls $DISTRO_DIR/$DISTRO/splash/splash-*.png 1>/dev/null 2>&1; then
       cp $DISTRO_DIR/$DISTRO/splash/splash-*.png $INSTALL/splash
-    else
+    elif [ -f $PKG_DIR/splash/splash-*.png ]; then
       cp $PKG_DIR/splash/splash-*.png $INSTALL/splash
     fi
 }
