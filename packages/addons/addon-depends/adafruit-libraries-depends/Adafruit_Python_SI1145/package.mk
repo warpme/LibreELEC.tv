@@ -35,6 +35,6 @@ make_target() {
 }
 
 makeinstall_target() {
-  : # nop
+  python setup.py install --root=$INSTALL --prefix=/usr
 }
 

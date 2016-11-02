@@ -52,5 +52,5 @@ make_target() {
 }
 
 makeinstall_target() {
-  : # nop
+  python setup.py install $RPI_VERSION --root=$INSTALL --prefix=/usr
 }
