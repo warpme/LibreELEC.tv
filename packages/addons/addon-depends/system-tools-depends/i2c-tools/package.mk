@@ -35,13 +35,23 @@ pre_make_target() {
 }
 
 make_target() {
-  make  EXTRA="py-smbus" \
-        CC="$CC" \
-        AR="$TARGET_AR" \
-        CFLAGS="$TARGET_CFLAGS" \
-        CPPFLAGS="$TARGET_CPPFLAGS -I${SYSROOT_PREFIX}/usr/include/python2.7"
+  make EXTRA="py-smbus" \
+       CC="$CC" \
+       AR="$TARGET_AR" \
+       CFLAGS="$TARGET_CFLAGS" \
+       CPPFLAGS="$TARGET_CPPFLAGS -I${SYSROOT_PREFIX}/usr/include/python2.7"
 }
 
-makeinstall_target() {
-  : # nop
+post_make_target() {
+  make strip \
+       CC="$TARGET_CC" \
+       AR="$TARGET_AR" \
+       CFLAGS="$TARGET_CFLAGS" \
+       CPPFLAGS="$TARGET_CPPFLAGS -I${SYSROOT_PREFIX}/usr/include/python2.7"
+}
+
+post_makeinstall_target() {
+  cd py-smbus
+  python setup.py install --root=$INSTALL --prefix=/usr
+  cd ..
 }

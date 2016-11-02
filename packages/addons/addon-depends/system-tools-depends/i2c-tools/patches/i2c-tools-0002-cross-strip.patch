@@ -1,0 +1,21 @@
+diff -Naur i2c-tools-3.1.1.orig/tools/Module.mk i2c-tools-3.1.1/tools/Module.mk
+--- i2c-tools-3.1.1.orig/tools/Module.mk	2015-02-16 21:56:09.024267312 -0800
++++ i2c-tools-3.1.1/tools/Module.mk	2015-02-16 21:56:51.019757041 -0800
+@@ -15,6 +15,8 @@
+ 
+ TOOLS_TARGETS	:= i2cdetect i2cdump i2cset i2cget
+ 
++STRIP           ?= strip
++
+ #
+ # Programs
+ #
+@@ -60,7 +62,7 @@
+ all-tools: $(addprefix $(TOOLS_DIR)/,$(TOOLS_TARGETS))
+ 
+ strip-tools: $(addprefix $(TOOLS_DIR)/,$(TOOLS_TARGETS))
+-	strip $(addprefix $(TOOLS_DIR)/,$(TOOLS_TARGETS))
++	$(STRIP) $(addprefix $(TOOLS_DIR)/,$(TOOLS_TARGETS))
+ 
+ clean-tools:
+ 	$(RM) $(addprefix $(TOOLS_DIR)/,*.o $(TOOLS_TARGETS))

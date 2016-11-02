@@ -1,0 +1,12 @@
+diff -Naur i2c-tools-3.1.1.orig/Makefile i2c-tools-3.1.1/Makefile
+--- i2c-tools-3.1.1.orig/Makefile	2015-02-16 18:54:36.845306285 -0800
++++ i2c-tools-3.1.1/Makefile	2015-02-16 18:55:22.959038513 -0800
+@@ -8,7 +8,7 @@
+ # (at your option) any later version.
+ 
+ DESTDIR	=
+-prefix	= /usr/local
++prefix	= /usr
+ bindir	= $(prefix)/bin
+ sbindir	= $(prefix)/sbin
+ mandir	= $(prefix)/share/man
