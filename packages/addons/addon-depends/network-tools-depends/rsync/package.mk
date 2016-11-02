@@ -32,7 +32,3 @@ PKG_AUTORECONF="no"
 PKG_CONFIGURE_OPTS_TARGET="--disable-acl-support \
             --disable-xattr-support \
             --with-included-popt"
-
-makeinstall_target() {
-  : # nop
-}
