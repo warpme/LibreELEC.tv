@@ -86,3 +86,5 @@
   # Space separated list is supported,
   # e.g. ADDITIONAL_DRIVERS="DRIVER1 DRIVER2"
     ADDITIONAL_DRIVERS="$ADDITIONAL_DRIVERS bcm_sta"
+
+GRAPHIC_DRIVERS="i915 i965 r200 r300 r600 nouveau"
