@@ -1,0 +1,14 @@
+diff -Naur a/src/libprojectM/CMakeLists.txt b/src/libprojectM/CMakeLists.txt
+--- a/src/libprojectM/CMakeLists.txt	2017-02-09 10:53:12.000000000 -0800
++++ b/src/libprojectM/CMakeLists.txt	2017-02-19 20:41:43.465211852 -0800
+@@ -161,9 +151,7 @@
+ 	FIND_PACKAGE(OpenGL)
+ endif (USE_GLES1)
+ 
+-INCLUDE(FindPkgConfig.cmake)
+-
+-pkg_search_module (FTGL ftgl)
++FIND_PACKAGE(FTGL)
+ 
+ #set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH};/opt/local/include;/Developer/SDKs/MACOSX10.5.sdk/usr/X11/include)
+ #set(CMAKE_LIBRARY_PATH /opt/local/lib;/Developer/SDKs/MACOSX10.5.sdk;/Developer/SDKs/MacOSX10.5.sdk/usr/X11/lib/)

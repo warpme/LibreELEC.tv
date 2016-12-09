@@ -1,0 +1,82 @@
+diff -Naur a/src/libprojectM/CMakeLists.txt b/src/libprojectM/CMakeLists.txt
+--- a/src/libprojectM/CMakeLists.txt	2017-02-09 10:53:12.000000000 -0800
++++ b/src/libprojectM/CMakeLists.txt	2017-02-19 20:38:40.432484911 -0800
+@@ -37,7 +37,6 @@
+ OPTION(USE_FTGL "Use FTGL for on-screen fonts" ${USE_FTGL_DEF})
+ OPTION (USE_THREADS "Use threads for parallelization" ${USE_THREADS_DEF})
+ OPTION (USE_OPENMP "Use OpenMP and OMPTL for multi-core parallelization" OFF)
+-OPTION (USE_INCLUDED_GLEW "Use projectM's included implemention of GLEW" OFF)
+ OPTION (USE_CG "Use Cg for Pixel Shader support" OFF)
+ OPTION (USE_DEVIL "Use devIL for image loading rather than the builtin SOIL library" OFF)
+ OPTION (BUILD_PROJECTM_STATIC "Build the projectM target library in the platform's native static (NOT shared) format." ON)
+@@ -51,17 +50,8 @@
+   CACHE PATH "The subdirectory relative to the install prefix where libraries will be installed (default is /lib)"
+   FORCE)
+ 
+-if (USE_INCLUDED_GLEW)
+-ADD_DEFINITIONS(-DUSE_NATIVE_GLEW)
+- SET(GLEW_SOURCES glew.h glew.c)
+- SET(GLEW_LIBRARY "")
+-else(USE_INCLUDED_GLEW)
+- set (GLEW_SOURCES "")
+- find_package (GLEW)
+-endif(USE_INCLUDED_GLEW)
+-
+ SET(projectM_SOURCES projectM.cpp PCM.cpp Preset.cpp fftsg.cpp KeyHandler.cpp
+-timer.cpp wipemalloc.cpp PresetLoader.cpp  PresetChooser.cpp PipelineMerger.cpp ConfigFile.cpp  TimeKeeper.cpp PresetFactory.cpp PresetFactoryManager.cpp ${GLEW_SOURCES})
++timer.cpp wipemalloc.cpp PresetLoader.cpp  PresetChooser.cpp PipelineMerger.cpp ConfigFile.cpp  TimeKeeper.cpp PresetFactory.cpp PresetFactoryManager.cpp)
+ 
+ if (MSVC)
+ SET(projectM_SOURCES ${projectM_SOURCES} dlfcn.c win32-dirent.cpp)
+@@ -228,7 +218,6 @@
+ 	${IMAGE_LINK_TARGETS}
+ 	${CG_LINK_TARGETS}
+ 	${PRESET_FACTORY_LINK_TARGETS}
+-	${GLEW_LIBRARY}
+ 	${FTGL_LINK_TARGETS}
+ 	${MATH_LIBRARIES}
+ 	${COREFOUNDATION_LIBRARIES}
+diff -Naur a/src/libprojectM/Renderer/CMakeLists.txt b/src/libprojectM/Renderer/CMakeLists.txt
+--- a/src/libprojectM/Renderer/CMakeLists.txt	2017-02-09 10:53:12.000000000 -0800
++++ b/src/libprojectM/Renderer/CMakeLists.txt	2017-02-19 20:38:55.246624685 -0800
+@@ -53,7 +53,6 @@
+ 
+ ADD_LIBRARY(Renderer STATIC ${Renderer_SOURCES})
+ TARGET_LINK_LIBRARIES(Renderer ${MATH_LIBRARIES}
+-			${GLEW_LINK_TARGETS}
+ 			${FTGL_LINK_TARGETS}
+ 			${OPENGL_LIBRARIES}
+ 			${IMAGE_LINK_TARGETS}
+diff -Naur a/src/libprojectM/Renderer/FBO.cpp b/src/libprojectM/Renderer/FBO.cpp
+--- a/src/libprojectM/Renderer/FBO.cpp	2017-02-09 10:53:12.000000000 -0800
++++ b/src/libprojectM/Renderer/FBO.cpp	2017-02-19 20:39:16.414824410 -0800
+@@ -94,10 +94,9 @@
+    this->texsize = texsize;
+ 
+ #ifdef USE_FBO
+-   glewInit();
+       // Forceably disable FBO if user requested it but the video card / driver lacks
+       // the appropraite frame buffer extension.
+-      if (useFBO = glewIsSupported("GL_EXT_framebuffer_object"))
++      if (useFBO = 1)
+ 	{	 
+ 
+ 	  GLuint   fb,  depth_rb, rgba_tex,  other_tex;
+diff -Naur a/src/libprojectM/Renderer/FBO.hpp b/src/libprojectM/Renderer/FBO.hpp
+--- a/src/libprojectM/Renderer/FBO.hpp	2017-02-09 10:53:12.000000000 -0800
++++ b/src/libprojectM/Renderer/FBO.hpp	2017-02-19 20:40:15.964386268 -0800
+@@ -34,11 +34,9 @@
+ #endif
+ 
+ #ifdef USE_FBO
+-#ifdef USE_INCLUDED_GLEW
+-#include "glew.h"
+-#else
+-#include <GL/glew.h>
+-#endif
++#define GL_GLEXT_PROTOTYPES
++#include <GL/gl.h>
++#include <GL/glext.h>
+ #endif
+ 
+ #ifdef __APPLE__

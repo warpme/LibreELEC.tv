@@ -17,11 +17,12 @@
 ################################################################################
 
 PKG_NAME="libprojectM"
-PKG_VERSION="2.0.0"
+PKG_VERSION="e28bb99"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="http://projectm.sourceforge.net/"
-PKG_URL="$DISTRO_SRC/$PKG_NAME-$PKG_VERSION.tar.gz"
+PKG_URL="https://github.com/projectM-visualizer/projectm/archive/$PKG_VERSION.tar.gz"
+PKG_SOURCE_DIR="projectm-$PKG_VERSION*"
 PKG_DEPENDS_TARGET="toolchain ftgl freetype $OPENGL"
 PKG_SECTION="multimedia"
 PKG_SHORTDESC="libprojectM:"
@@ -30,4 +31,24 @@ PKG_LONGDESC="libprojectM:"
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
 
-PKG_CMAKE_OPTS_TARGET="-DBUILD_PROJECTM_STATIC=1"
+PKG_CMAKE_OPTS_TARGET="-DCMAKE_PREFIX_PATH=$SYSROOT_PREFIX/usr \
+                       -DINCLUDE-PROJECTM-QT=OFF \
+                       -DINCLUDE-PROJECTM-PULSEAUDIO=OFF \
+                       -DINCLUDE-PROJECTM-LIBVISUAL=OFF \
+                       -DINCLUDE-PROJECTM-LIBVISUAL-ALSA=OFF \
+                       -DINCLUDE-PROJECTM-JACK=OFF \
+                       -DINCLUDE-PROJECTM-TEST=OFF \
+                       -DINCLUDE-PROJECTM-XMMS=OFF \
+                       -DINCLUDE-PROJECTM-SDL=OFF \
+                       -DINCLUDE-NATIVE-SAMPLES=OFF \
+                       -DINCLUDE-NATIVE-PRESETS=OFF \
+                       -DUSE_DEVIL=OFF \
+                       -DUSE_FBO=ON \
+                       -DUSE_FTGL=ON \
+                       -DUSE_GLES1=OFF \
+                       -DUSE_THREADS=ON \
+                       -DUSE_OPENMP=OFF \
+                       -DUSE_CG=OFF \
+                       -DBUILD_PROJECTM_STATIC=ON \
+                       -DDISABLE_NATIVE_PRESETS=OFF \
+                       -DDISABLE_MILKDROP_PRESETS=OFF"
