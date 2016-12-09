@@ -17,11 +17,12 @@
 ################################################################################
 
 PKG_NAME="ftgl"
-PKG_VERSION="2.1.2"
+PKG_VERSION="bceab59"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="http://sourceforge.net/projects/ftgl/"
-PKG_URL="$DISTRO_SRC/$PKG_NAME-$PKG_VERSION.tar.gz"
+PKG_URL="https://github.com/ulrichard/ftgl/archive/$PKG_VERSION.tar.gz"
+#PKG_URL="$DISTRO_SRC/$PKG_NAME-$PKG_VERSION.tar.gz"
 PKG_DEPENDS_TARGET="toolchain freetype"
 PKG_SECTION="multimedia"
 PKG_SHORTDESC="ftgl:"
@@ -30,4 +31,5 @@ PKG_LONGDESC="ftgl:"
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
 
-PKG_CMAKE_OPTS_TARGET="-DOUTPUT_DIR=$SYSROOT_PREFIX/usr"
+PKG_CMAKE_OPTS_TARGET="-DBUILD_SHARED_LIBS=OFF \
+                       -DBUILD_TESTS=OFF"
