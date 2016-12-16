@@ -1,0 +1,107 @@
+From bf5b0777036083f8a1e311a2067b5f37929a6e22 Mon Sep 17 00:00:00 2001
+From: Rainer Hochecker <fernetmenta@online.de>
+Date: Fri, 16 Dec 2016 21:16:26 +0100
+Subject: [PATCH] dri: allow 16bit R/GR images to be exported via drm buffers
+
+This allows eglCreateImageKHR to access P010 surfaces created by vaapi
+
+patch for drm, fourcc:
+http://paste.ubuntu.com/23638632/
+
+Signed-off-by: Rainer Hochecker <fernetmenta@online.de>
+---
+ include/GL/internal/dri_interface.h      |  4 ++++
+ src/egl/drivers/dri2/egl_dri2.c          | 10 ++++++++++
+ src/mesa/drivers/dri/common/dri_util.c   |  4 ++++
+ src/mesa/drivers/dri/i965/intel_screen.c |  6 ++++++
+ 4 files changed, 24 insertions(+)
+
+diff --git a/include/GL/internal/dri_interface.h b/include/GL/internal/dri_interface.h
+index d0b1bc6..933277e 100644
+--- a/include/GL/internal/dri_interface.h
++++ b/include/GL/internal/dri_interface.h
+@@ -1121,6 +1121,8 @@ struct __DRIdri2ExtensionRec {
+ #define __DRI_IMAGE_FORMAT_XRGB2101010  0x1009
+ #define __DRI_IMAGE_FORMAT_ARGB2101010  0x100a
+ #define __DRI_IMAGE_FORMAT_SARGB8       0x100b
++#define __DRI_IMAGE_FORMAT_R16          0x100c
++#define __DRI_IMAGE_FORMAT_GR16         0x100d
+ 
+ #define __DRI_IMAGE_USE_SHARE		0x0001
+ #define __DRI_IMAGE_USE_SCANOUT		0x0002
+@@ -1148,6 +1150,8 @@ struct __DRIdri2ExtensionRec {
+ 
+ #define __DRI_IMAGE_FOURCC_R8		0x20203852
+ #define __DRI_IMAGE_FOURCC_GR88		0x38385247
++#define __DRI_IMAGE_FOURCC_R16		0x20363152
++#define __DRI_IMAGE_FOURCC_GR16		0x36315247
+ #define __DRI_IMAGE_FOURCC_RGB565	0x36314752
+ #define __DRI_IMAGE_FOURCC_ARGB8888	0x34325241
+ #define __DRI_IMAGE_FOURCC_XRGB8888	0x34325258
+diff --git a/src/egl/drivers/dri2/egl_dri2.c b/src/egl/drivers/dri2/egl_dri2.c
+index f18e9fb..f4ed022 100644
+--- a/src/egl/drivers/dri2/egl_dri2.c
++++ b/src/egl/drivers/dri2/egl_dri2.c
+@@ -75,6 +75,14 @@
+ #define DRM_FORMAT_GR88          fourcc_code('G', 'R', '8', '8') /* [15:0] G:R 8:8 little endian */
+ #endif
+ 
++#ifndef DRM_FORMAT_R16
++#define DRM_FORMAT_R16           fourcc_code('R', '1', '6', ' ') /* [15:0] R 16 little endian */
++#endif
++
++#ifndef DRM_FORMAT_GR16
++#define DRM_FORMAT_GR16          fourcc_code('G', 'R', '1', '6') /* [31:0] R:G 16:16 little endian */
++#endif
++
+ const __DRIuseInvalidateExtension use_invalidate = {
+    .base = { __DRI_USE_INVALIDATE, 1 }
+ };
+@@ -1951,6 +1959,8 @@ dri2_check_dma_buf_format(const _EGLImageAttribs *attrs)
+    case DRM_FORMAT_R8:
+    case DRM_FORMAT_RG88:
+    case DRM_FORMAT_GR88:
++   case DRM_FORMAT_R16:
++   case DRM_FORMAT_GR16:
+    case DRM_FORMAT_RGB332:
+    case DRM_FORMAT_BGR233:
+    case DRM_FORMAT_XRGB4444:
+diff --git a/src/mesa/drivers/dri/common/dri_util.c b/src/mesa/drivers/dri/common/dri_util.c
+index 3b81799..c275c07 100644
+--- a/src/mesa/drivers/dri/common/dri_util.c
++++ b/src/mesa/drivers/dri/common/dri_util.c
+@@ -877,8 +877,12 @@ driImageFormatToGLFormat(uint32_t image_format)
+       return MESA_FORMAT_R8G8B8X8_UNORM;
+    case __DRI_IMAGE_FORMAT_R8:
+       return MESA_FORMAT_R_UNORM8;
++   case __DRI_IMAGE_FORMAT_R16:
++      return MESA_FORMAT_R_UNORM16;
+    case __DRI_IMAGE_FORMAT_GR88:
+       return MESA_FORMAT_R8G8_UNORM;
++   case __DRI_IMAGE_FORMAT_GR16:
++      return MESA_FORMAT_R16G16_UNORM;
+    case __DRI_IMAGE_FORMAT_SARGB8:
+       return MESA_FORMAT_B8G8R8A8_SRGB;
+    case __DRI_IMAGE_FORMAT_NONE:
+diff --git a/src/mesa/drivers/dri/i965/intel_screen.c b/src/mesa/drivers/dri/i965/intel_screen.c
+index e1c3c19..b3700c6 100644
+--- a/src/mesa/drivers/dri/i965/intel_screen.c
++++ b/src/mesa/drivers/dri/i965/intel_screen.c
+@@ -236,9 +236,15 @@ static struct intel_image_format intel_image_formats[] = {
+    { __DRI_IMAGE_FOURCC_R8, __DRI_IMAGE_COMPONENTS_R, 1,
+      { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 }, } },
+ 
++   { __DRI_IMAGE_FOURCC_R16, __DRI_IMAGE_COMPONENTS_R, 1,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_R16, 1 }, } },
++
+    { __DRI_IMAGE_FOURCC_GR88, __DRI_IMAGE_COMPONENTS_RG, 1,
+      { { 0, 0, 0, __DRI_IMAGE_FORMAT_GR88, 2 }, } },
+ 
++   { __DRI_IMAGE_FOURCC_GR16, __DRI_IMAGE_COMPONENTS_RG, 1,
++     { { 0, 0, 0, __DRI_IMAGE_FORMAT_GR16, 2 }, } },
++
+    { __DRI_IMAGE_FOURCC_YUV410, __DRI_IMAGE_COMPONENTS_Y_U_V, 3,
+      { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 },
+        { 1, 2, 2, __DRI_IMAGE_FORMAT_R8, 1 },
+-- 
+2.9.3
