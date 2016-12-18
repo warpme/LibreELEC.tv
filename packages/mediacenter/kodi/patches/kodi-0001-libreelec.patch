@@ -1,0 +1,1515 @@
+From fe44eed5d55b6f8854012208f900811795c02661 Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sat, 18 Apr 2015 15:12:49 +0300
+Subject: [PATCH 01/27] enable PYTHONOPTIMIZE with external Python
+
+---
+ xbmc/interfaces/python/XBPython.cpp | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/interfaces/python/XBPython.cpp b/xbmc/interfaces/python/XBPython.cpp
+index bc84af9..4e67c67 100644
+--- a/xbmc/interfaces/python/XBPython.cpp
++++ b/xbmc/interfaces/python/XBPython.cpp
+@@ -567,10 +567,9 @@ bool XBPython::OnScriptInitialized(ILanguageInvoker *invoker)
+     // at http://docs.python.org/using/cmdline.html#environment-variables
+ 
+ #if !defined(TARGET_WINDOWS) && !defined(TARGET_ANDROID)
+-    /* PYTHONOPTIMIZE is set off intentionally when using external Python.
+-    Reason for this is because we cannot be sure what version of Python
+-    was used to compile the various Python object files (i.e. .pyo,
+-    .pyc, etc.). */
++    // Required for python to find optimized code (pyo) files
++    setenv("PYTHONOPTIMIZE", "1", 1);
++
+     // check if we are running as real xbmc.app or just binary
+     if (!CUtil::GetFrameworksPath(true).empty())
+     {
+-- 
+2.9.3
+
+
+From c836638ff978c9ce900f9cf5dafdf79d5c6aa816 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:16:21 -0800
+Subject: [PATCH 02/27] add LibreELEC rss feed
+
+---
+ userdata/RssFeeds.xml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/userdata/RssFeeds.xml b/userdata/RssFeeds.xml
+index 48b99e8..b2e7e71 100644
+--- a/userdata/RssFeeds.xml
++++ b/userdata/RssFeeds.xml
+@@ -3,6 +3,7 @@
+   <!-- RSS feeds. To have multiple feeds, just add a feed to the set. You can also have multiple sets. 	!-->
+   <!-- To use different sets in your skin, each must be called from skin with a unique id.             	!-->
+   <set id="1">
++    <feed updateinterval="30">https://libreelec.tv/feed</feed>
+     <feed updateinterval="30">http://feeds.kodi.tv/xbmc</feed>
+     <feed updateinterval="30">http://feeds.kodi.tv/latest_xbmc_addons</feed>
+     <feed updateinterval="30">http://feeds.kodi.tv/updated_xbmc_addons</feed>
+-- 
+2.9.3
+
+
+From 9a103fb51f793085340ba5d0622c8fb2b68a7752 Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sun, 18 Dec 2016 11:21:27 -0800
+Subject: [PATCH 03/27] disable online check
+
+---
+ xbmc/GUIInfoManager.cpp              | 1 -
+ xbmc/utils/SystemInfo.cpp            | 5 +----
+ xbmc/windows/GUIWindowSystemInfo.cpp | 1 -
+ 3 files changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index d683351..610d749 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -1204,7 +1204,6 @@ const infomap system_labels[] =  {{ "hasnetwork",       SYSTEM_ETHERNET_LINK_ACT
+                                   { "currentcontrol",   SYSTEM_CURRENT_CONTROL },
+                                   { "currentcontrolid", SYSTEM_CURRENT_CONTROL_ID },
+                                   { "dvdlabel",         SYSTEM_DVD_LABEL },
+-                                  { "internetstate",    SYSTEM_INTERNET_STATE },
+                                   { "osversioninfo",    SYSTEM_OS_VERSION_INFO },
+                                   { "kernelversion",    SYSTEM_OS_VERSION_INFO }, // old, not correct name
+                                   { "uptime",           SYSTEM_UPTIME },
+diff --git a/xbmc/utils/SystemInfo.cpp b/xbmc/utils/SystemInfo.cpp
+index fcc6733..562a507 100644
+--- a/xbmc/utils/SystemInfo.cpp
++++ b/xbmc/utils/SystemInfo.cpp
+@@ -254,7 +254,6 @@ bool CSysInfoJob::DoWork()
+ {
+   m_info.systemUptime      = GetSystemUpTime(false);
+   m_info.systemTotalUptime = GetSystemUpTime(true);
+-  m_info.internetState     = GetInternetState();
+   m_info.videoEncoder      = GetVideoEncoder();
+   m_info.cpuFrequency      = GetCPUFreqInfo();
+   m_info.osVersionInfo     = CSysInfo::GetOsPrettyNameWithVersion() + " (kernel: " + CSysInfo::GetKernelName() + " " + CSysInfo::GetKernelVersionFull() + ")";
+@@ -1025,9 +1024,7 @@ int CSysInfo::GetXbmcBitness(void)
+ 
+ bool CSysInfo::HasInternet()
+ {
+-  if (m_info.internetState != CSysData::UNKNOWN)
+-    return m_info.internetState == CSysData::CONNECTED;
+-  return (m_info.internetState = CSysInfoJob::GetInternetState()) == CSysData::CONNECTED;
++  return m_info.internetState == CSysData::UNKNOWN;
+ }
+ 
+ std::string CSysInfo::GetHddSpaceInfo(int drive, bool shortText)
+diff --git a/xbmc/windows/GUIWindowSystemInfo.cpp b/xbmc/windows/GUIWindowSystemInfo.cpp
+index 93e9f74..9af0090 100644
+--- a/xbmc/windows/GUIWindowSystemInfo.cpp
++++ b/xbmc/windows/GUIWindowSystemInfo.cpp
+@@ -134,7 +134,6 @@ void CGUIWindowSystemInfo::FrameMove()
+     SetControlLabel(i++, "%s: %s", 13160, NETWORK_GATEWAY_ADDRESS);
+     SetControlLabel(i++, "%s: %s", 13161, NETWORK_DNS1_ADDRESS);
+     SetControlLabel(i++, "%s: %s", 20307, NETWORK_DNS2_ADDRESS);
+-    SetControlLabel(i++, "%s %s", 13295, SYSTEM_INTERNET_STATE);
+   }
+ 
+   else if (m_section == CONTROL_BT_VIDEO)
+-- 
+2.9.3
+
+
+From ade77aff5cb8905402aac0815f171713632eb7c2 Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Thu, 17 Apr 2014 12:12:50 +0300
+Subject: [PATCH 04/27] use udevil to umount
+
+---
+ xbmc/linux/PosixMountProvider.cpp   | 2 +-
+ xbmc/storage/linux/UDevProvider.cpp | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/linux/PosixMountProvider.cpp b/xbmc/linux/PosixMountProvider.cpp
+index 218d10b..57e94ca 100644
+--- a/xbmc/linux/PosixMountProvider.cpp
++++ b/xbmc/linux/PosixMountProvider.cpp
+@@ -133,7 +133,7 @@ bool CPosixMountProvider::Eject(const std::string& mountpath)
+ {
+   // just go ahead and try to umount the disk
+   // if it does umount, life is good, if not, no loss.
+-  std::string cmd = "umount \"" + mountpath + "\"";
++  std::string cmd = "udevil umount \"" + mountpath + "\"";
+   int status = system(cmd.c_str());
+ 
+   if (status == 0)
+diff --git a/xbmc/storage/linux/UDevProvider.cpp b/xbmc/storage/linux/UDevProvider.cpp
+index 6fda5a5..9e9e2d8 100644
+--- a/xbmc/storage/linux/UDevProvider.cpp
++++ b/xbmc/storage/linux/UDevProvider.cpp
+@@ -207,7 +207,7 @@ bool CUDevProvider::Eject(const std::string& mountpath)
+ {
+   // just go ahead and try to umount the disk
+   // if it does umount, life is good, if not, no loss.
+-  std::string cmd = "umount \"" + mountpath + "\"";
++  std::string cmd = "udevil umount \"" + mountpath + "\"";
+   int status = system(cmd.c_str());
+ 
+   if (status == 0)
+-- 
+2.9.3
+
+
+From ed6c2dbd3a33a45ae04ffeac6ca1042bd525fe73 Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sun, 18 Dec 2016 11:25:59 -0800
+Subject: [PATCH 05/27] make binary addons executable
+
+---
+ xbmc/addons/Addon.cpp | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
+index a9ffe7f..bb1f31d 100644
+--- a/xbmc/addons/Addon.cpp
++++ b/xbmc/addons/Addon.cpp
+@@ -51,6 +51,10 @@
+ #include "freebsd/FreeBSDGNUReplacements.h"
+ #endif
+ 
++#include <iostream>
++#include <dirent.h>
++#include <sys/stat.h>
++
+ using XFILE::CDirectory;
+ using XFILE::CFile;
+ 
+@@ -410,6 +414,28 @@ void OnPostInstall(const AddonPtr& addon, bool update, bool modal)
+   if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_REPOSITORY))
+     CRepositoryUpdater::GetInstance().ScheduleUpdate(); //notify updater there is a new addon or version
+ 
++  // OE: make binary addons executable, creddits to vpeter4
++  std::string addonDirPath;
++  std::string chmodFilePath;
++  DIR *addonsDir;
++  struct dirent *fileDirent;
++  struct stat fileStat;
++  int statRet;
++
++  addonDirPath = "/storage/.kodi/addons/" + addon->ID() + "/bin/";
++  if ((addonsDir = opendir(addonDirPath.c_str())) != NULL)
++  {
++    while ((fileDirent = readdir(addonsDir)) != NULL)
++    {
++      chmodFilePath = addonDirPath + fileDirent->d_name;
++      statRet = stat(chmodFilePath.c_str(), &fileStat);
++      if (statRet == 0 && (fileStat.st_mode & S_IFMT) != S_IFDIR)
++        chmod(chmodFilePath.c_str(), fileStat.st_mode | S_IXUSR | S_IXGRP | S_IXOTH);
++    }
++    closedir(addonsDir);
++  }
++  // OE
++
+   addon->OnPostInstall(update, modal);
+ }
+ 
+-- 
+2.9.3
+
+
+From b75a42fff78025a3a48bf6c5a303533874d99923 Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sun, 18 Dec 2016 11:27:29 -0800
+Subject: [PATCH 06/27] dont set _NET_WM_STAT_FULLSCREEN
+
+---
+ xbmc/windowing/X11/WinSystemX11.cpp | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/xbmc/windowing/X11/WinSystemX11.cpp b/xbmc/windowing/X11/WinSystemX11.cpp
+index ee85585..3487816 100644
+--- a/xbmc/windowing/X11/WinSystemX11.cpp
++++ b/xbmc/windowing/X11/WinSystemX11.cpp
+@@ -760,8 +760,6 @@ bool CWinSystemX11::SetWindow(int width, int height, bool fullscreen, const std:
+ 
+     if (fullscreen && hasWM)
+     {
+-      Atom fs = XInternAtom(m_dpy, "_NET_WM_STATE_FULLSCREEN", True);
+-      XChangeProperty(m_dpy, m_mainWindow, XInternAtom(m_dpy, "_NET_WM_STATE", True), XA_ATOM, 32, PropModeReplace, (unsigned char *) &fs, 1);
+       // disable desktop compositing for KDE, when Kodi is in full-screen mode
+       int one = 1;
+       Atom composite = XInternAtom(m_dpy, "_KDE_NET_WM_BLOCK_COMPOSITING", True);
+-- 
+2.9.3
+
+
+From 03cd7f4b67defc5a5fa99b79cdb10c55387c59ab Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sun, 18 Dec 2016 11:28:24 -0800
+Subject: [PATCH 07/27] disable minimize
+
+---
+ xbmc/Application.cpp | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 1570714..0990511 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -4983,7 +4983,6 @@ bool CApplication::SwitchToFullScreen(bool force /* = false */)
+ 
+ void CApplication::Minimize()
+ {
+-  g_Windowing.Minimize();
+ }
+ 
+ std::string CApplication::GetCurrentPlayer()
+-- 
+2.9.3
+
+
+From 7f0d6032bfe012dfcda9e3b3d6bc3726f6d8c283 Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sun, 18 Dec 2016 11:29:13 -0800
+Subject: [PATCH 08/27] setup timezone
+
+---
+ xbmc/linux/LinuxTimezone.cpp | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/xbmc/linux/LinuxTimezone.cpp b/xbmc/linux/LinuxTimezone.cpp
+index 2f383ac..b562c49 100644
+--- a/xbmc/linux/LinuxTimezone.cpp
++++ b/xbmc/linux/LinuxTimezone.cpp
+@@ -42,6 +42,8 @@
+ 
+ #include <algorithm>
+ 
++#include <fstream>
++
+ CLinuxTimezone::CLinuxTimezone() : m_IsDST(0)
+ {
+    char* line = NULL;
+@@ -159,6 +161,16 @@ void CLinuxTimezone::OnSettingChanged(const CSetting *setting)
+   const std::string &settingId = setting->GetId();
+   if (settingId == CSettings::SETTING_LOCALE_TIMEZONE)
+   {
++    std::ofstream out("/storage/.cache/timezone");
++    if (out)
++    {
++      const std::string tz = std::string("TIMEZONE=") + ((CSettingString*)setting)->GetValue().c_str();
++      out << tz << std::endl;
++      out.flush();
++      out.close();
++      system("systemctl restart tz-data.service");
++    }
++
+     SetTimezone(((CSettingString*)setting)->GetValue());
+ 
+     CDateTime::ResetTimezoneBias();
+-- 
+2.9.3
+
+
+From 67128ac6ef1086a89b86fc28fa5513cd274dc8c0 Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sun, 18 Dec 2016 11:30:39 -0800
+Subject: [PATCH 09/27] use a wrapper to setup systemd services
+
+---
+ xbmc/addons/Addon.cpp | 31 +++++++++++++++++++++++++++++++
+ xbmc/addons/Addon.h   |  2 ++
+ 2 files changed, 33 insertions(+)
+
+diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
+index bb1f31d..d1300e8 100644
+--- a/xbmc/addons/Addon.cpp
++++ b/xbmc/addons/Addon.cpp
+@@ -344,6 +344,13 @@ AddonVersion CAddon::GetDependencyVersion(const std::string &dependencyID) const
+   return AddonVersion("0.0.0");
+ }
+ 
++void CallOEWrapper(const std::string& ID, bool disable)
++{
++  char cmd[255];
++  snprintf(cmd, sizeof(cmd), "/usr/lib/libreelec/systemd-addon-wrapper %s %d", ID.c_str(), disable);
++  system(cmd);
++}
++
+ void OnEnabled(const std::string& id)
+ {
+   // If the addon is a special, call enabled handler
+@@ -353,6 +360,11 @@ void OnEnabled(const std::string& id)
+       CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_PERIPHERALDLL))
+     return addon->OnEnabled();
+ 
++  // OE: systemctl enable & start on addon enable
++  if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_SERVICE))
++    CallOEWrapper(addon->ID(), false);
++  // OE
++
+   if (CAddonMgr::GetInstance().ServicesHasStarted())
+   {
+     if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_SERVICE))
+@@ -378,6 +390,11 @@ void OnDisabled(const std::string& id)
+       std::static_pointer_cast<CService>(addon)->Stop();
+   }
+ 
++  // OE: systemctl stop & disable on addon disable
++  if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_SERVICE, false))
++    CallOEWrapper(addon->ID(), true);
++  // OE
++
+   if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_CONTEXT_ITEM, false))
+     CContextMenuManager::GetInstance().Unload(*std::static_pointer_cast<CContextMenuAddon>(addon));
+ }
+@@ -405,6 +422,15 @@ void OnPreInstall(const AddonPtr& addon)
+ void OnPostInstall(const AddonPtr& addon, bool update, bool modal)
+ {
+   AddonPtr localAddon;
++
++  // OE: systemctl stop & disable / enable & start on addon upgrade
++  if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
++  {
++    CallOEWrapper(addon->ID(), true);
++    CallOEWrapper(addon->ID(), false);
++  }
++  // OE
++
+   if (CAddonMgr::GetInstance().ServicesHasStarted())
+   {
+     if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
+@@ -443,6 +469,11 @@ void OnPreUnInstall(const AddonPtr& addon)
+ {
+   AddonPtr localAddon;
+ 
++  // OE: systemctl stop & disable on addon uninstall
++  if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
++    CallOEWrapper(addon->ID(), true);
++  // OE
++
+   if (CAddonMgr::GetInstance().ServicesHasStarted())
+   {
+     if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
+diff --git a/xbmc/addons/Addon.h b/xbmc/addons/Addon.h
+index 515afe1..36287d6 100644
+--- a/xbmc/addons/Addon.h
++++ b/xbmc/addons/Addon.h
+@@ -121,6 +121,8 @@ public:
+   const InfoMap& ExtraInfo() const override { return m_props.extrainfo; }
+   const ADDONDEPS& GetDeps() const override { return m_props.dependencies; }
+ 
++  void CallOEWrapper(const std::string& ID, bool disable);
++
+   /*! \brief Check whether the this addon can be configured or not
+    \return true if the addon has settings, false otherwise
+    \sa LoadSettings, LoadUserSettings, SaveSettings, HasUserSettings, GetSetting, UpdateSetting
+-- 
+2.9.3
+
+
+From cd4a0a2e46e3a3457d1cdaf522dde12cf24955b0 Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sun, 18 Dec 2016 11:34:03 -0800
+Subject: [PATCH 10/27] handle sigterm
+
+---
+ xbmc/Application.cpp         | 17 ++++++++++++-----
+ xbmc/Application.h           |  1 +
+ xbmc/XBApplicationEx.cpp     |  1 +
+ xbmc/XBApplicationEx.h       |  1 +
+ xbmc/platform/posix/main.cpp | 15 +++++++++++++++
+ 5 files changed, 30 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 0990511..04b10c5 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -2427,12 +2427,12 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
+   switch (pMsg->dwMessage)
+   {
+   case TMSG_POWERDOWN:
+-    Stop(EXITCODE_POWERDOWN);
++    SetExitCode(EXITCODE_POWERDOWN);
+     g_powerManager.Powerdown();
+     break;
+ 
+   case TMSG_QUIT:
+-    Stop(EXITCODE_QUIT);
++    SetExitCode(EXITCODE_QUIT);
+     break;
+   
+   case TMSG_SHUTDOWN:
+@@ -2453,12 +2453,13 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
+ 
+   case TMSG_RESTART:
+   case TMSG_RESET:
+-    Stop(EXITCODE_REBOOT);
++    SetExitCode(EXITCODE_REBOOT);
+     g_powerManager.Reboot();
+     break;
+ 
+   case TMSG_RESTARTAPP:
+ #if defined(TARGET_WINDOWS) || defined(TARGET_LINUX)
++    SetExitCode(EXITCODE_RESTARTAPP);
+     Stop(EXITCODE_RESTARTAPP);
+ #endif
+     break;
+@@ -2882,6 +2883,13 @@ bool CApplication::Cleanup()
+   }
+ }
+ 
++void CApplication::SetExitCode(int exitCode)
++{
++  // save it for CEC
++  m_ExitCode = exitCode;
++  m_ExitCodeSet = true;
++}
++
+ void CApplication::Stop(int exitCode)
+ {
+   try
+@@ -2889,7 +2897,7 @@ void CApplication::Stop(int exitCode)
+     m_frameMoveGuard.unlock();
+ 
+     CVariant vExitCode(CVariant::VariantTypeObject);
+-    vExitCode["exitcode"] = exitCode;
++    vExitCode["exitcode"] = m_ExitCode;
+     CAnnouncementManager::GetInstance().Announce(System, "xbmc", "OnQuit", vExitCode);
+ 
+     // Abort any active screensaver
+@@ -2923,7 +2931,6 @@ void CApplication::Stop(int exitCode)
+ 
+     m_bStop = true;
+     m_AppFocused = false;
+-    m_ExitCode = exitCode;
+     CLog::Log(LOGNOTICE, "stop all");
+ 
+     // cancel any jobs from the jobmanager
+diff --git a/xbmc/Application.h b/xbmc/Application.h
+index a9d9bf5..e536deb 100644
+--- a/xbmc/Application.h
++++ b/xbmc/Application.h
+@@ -159,6 +159,7 @@ public:
+   void StopPVRManager();
+   void ReinitPVRManager();
+   bool IsCurrentThread() const;
++  void SetExitCode(int exitCode);
+   void Stop(int exitCode);
+   void RestartApp();
+   void UnloadSkin(bool forReload = false);
+diff --git a/xbmc/XBApplicationEx.cpp b/xbmc/XBApplicationEx.cpp
+index 035aed2..34102f5 100644
+--- a/xbmc/XBApplicationEx.cpp
++++ b/xbmc/XBApplicationEx.cpp
+@@ -46,6 +46,7 @@ CXBApplicationEx::CXBApplicationEx()
+   m_bStop = false;
+   m_AppFocused = true;
+   m_ExitCode = EXITCODE_QUIT;
++  m_ExitCodeSet = false;
+   m_renderGUI = false;
+ }
+ 
+diff --git a/xbmc/XBApplicationEx.h b/xbmc/XBApplicationEx.h
+index 9bc14fa..f696b89 100644
+--- a/xbmc/XBApplicationEx.h
++++ b/xbmc/XBApplicationEx.h
+@@ -42,6 +42,7 @@ public:
+   // Variables for timing
+   bool m_bStop;
+   int  m_ExitCode;
++  bool m_ExitCodeSet;
+   bool m_AppFocused;
+   bool m_renderGUI;
+ 
+diff --git a/xbmc/platform/posix/main.cpp b/xbmc/platform/posix/main.cpp
+index a8b64e5..3d80032 100644
+--- a/xbmc/platform/posix/main.cpp
++++ b/xbmc/platform/posix/main.cpp
+@@ -41,12 +41,27 @@
+ #include "input/linux/LIRC.h"
+ #endif
+ #include "platform/XbmcContext.h"
++#include "Application.h"
++
++void xbmc_term_handler(int signum)
++{
++  CLog::Log(LOGINFO, "Received SIGTERM...");
++  if (!g_application.m_ExitCodeSet)
++    g_application.SetExitCode(EXITCODE_RESTARTAPP);
++  g_application.Stop(EXITCODE_RESTARTAPP);
++}
+ 
+ #ifdef __cplusplus
+ extern "C"
+ #endif
+ int main(int argc, char* argv[])
+ {
++  // SIGTERM handler
++  struct sigaction action;
++  memset(&action, 0, sizeof(struct sigaction));
++  action.sa_handler = xbmc_term_handler;
++  sigaction(SIGTERM, &action, NULL);
++
+   // set up some xbmc specific relationships
+   XBMC::Context context;
+ 
+-- 
+2.9.3
+
+
+From 0722190939d600c55140032b09927f853d55cc61 Mon Sep 17 00:00:00 2001
+From: Stephan Raue <stephan@openelec.tv>
+Date: Mon, 1 Sep 2014 03:16:37 +0200
+Subject: [PATCH 11/27] add support to read frequency output if using intel's
+ pstate driver
+
+---
+ xbmc/utils/CPUInfo.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/xbmc/utils/CPUInfo.cpp b/xbmc/utils/CPUInfo.cpp
+index 5e2ebbd..fd04d5a 100644
+--- a/xbmc/utils/CPUInfo.cpp
++++ b/xbmc/utils/CPUInfo.cpp
+@@ -274,6 +274,8 @@ CCPUInfo::CCPUInfo(void)
+     m_fProcTemperature = fopen("/sys/class/thermal/thermal_zone0/temp", "r");  // On Raspberry PIs
+ 
+   m_fCPUFreq = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", "r");
++  if (m_fCPUFreq == NULL)
++    m_fCPUFreq = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq", "r");
+   if (!m_fCPUFreq)
+   {
+     m_cpuInfoForFreq = true;
+-- 
+2.9.3
+
+
+From e2b3bdd72e7bc2db5f1754dcb68dcce31dca2c1b Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sat, 18 Apr 2015 15:45:54 +0300
+Subject: [PATCH 12/27] prevent kodi switching to windowed mode
+
+---
+ xbmc/windowing/X11/WinSystemX11.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/xbmc/windowing/X11/WinSystemX11.h b/xbmc/windowing/X11/WinSystemX11.h
+index 5f14863..6a22b33 100644
+--- a/xbmc/windowing/X11/WinSystemX11.h
++++ b/xbmc/windowing/X11/WinSystemX11.h
+@@ -47,6 +47,7 @@ public:
+   bool ResizeWindow(int newWidth, int newHeight, int newLeft, int newTop) override;
+   bool SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, bool blankOtherDisplays) override;
+   void UpdateResolutions() override;
++  bool CanDoWindowed() override { return false; }
+   int  GetNumScreens() override { return 1; }
+   int  GetCurrentScreen() override { return m_nScreen; }
+   void ShowOSMouse(bool show) override;
+-- 
+2.9.3
+
+
+From 06f3089f1fc10f39ebb937ce748fa94b818745ef Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sun, 26 Apr 2015 15:13:15 +0300
+Subject: [PATCH 13/27] udevprovider: filter out OE specific mounts
+
+---
+ xbmc/storage/linux/UDevProvider.cpp | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/xbmc/storage/linux/UDevProvider.cpp b/xbmc/storage/linux/UDevProvider.cpp
+index 9e9e2d8..54e92e8 100644
+--- a/xbmc/storage/linux/UDevProvider.cpp
++++ b/xbmc/storage/linux/UDevProvider.cpp
+@@ -152,6 +152,20 @@ void CUDevProvider::GetDisks(VECSOURCES& disks, bool removable)
+       continue;
+     }
+ 
++    // LE: filter out Libreelec specific mounts
++    if (strstr(mountpoint, "/flash"))
++    {
++      udev_device_unref(device);
++      continue;
++    }
++
++    if (strstr(mountpoint, "/storage"))
++    {
++      udev_device_unref(device);
++      continue;
++    }
++    // OE
++
+     // look for devices on the usb bus, or mounted on */media/ (sdcards), or optical devices
+     const char *bus = udev_device_get_property_value(device, "ID_BUS");
+     const char *optical = udev_device_get_property_value(device, "ID_CDROM"); // matches also DVD, Blu-ray
+-- 
+2.9.3
+
+
+From 76a08877abafc64917f02afe060f8e50948cef5b Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:39:51 -0800
+Subject: [PATCH 14/27] use alsa and pulse together
+
+---
+ xbmc/cores/AudioEngine/AESinkFactory.cpp | 33 +++++++++++++++++++++++++-------
+ 1 file changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/xbmc/cores/AudioEngine/AESinkFactory.cpp b/xbmc/cores/AudioEngine/AESinkFactory.cpp
+index 952461d..bd64d0e 100644
+--- a/xbmc/cores/AudioEngine/AESinkFactory.cpp
++++ b/xbmc/cores/AudioEngine/AESinkFactory.cpp
+@@ -28,6 +28,9 @@
+ #elif defined(TARGET_RASPBERRY_PI)
+   #include "Sinks/AESinkPi.h"
+   #include "Sinks/AESinkALSA.h"
++  #if defined(HAS_PULSEAUDIO)
++    #include "Sinks/AESinkPULSE.h"
++  #endif
+ #elif defined(TARGET_DARWIN_IOS)
+   #include "Sinks/AESinkDARWINIOS.h"
+ #elif defined(TARGET_DARWIN_OSX)
+@@ -69,6 +72,9 @@ void CAESinkFactory::ParseDevice(std::string &device, std::string &driver)
+ #elif defined(TARGET_RASPBERRY_PI)
+         driver == "PI"          ||
+         driver == "ALSA"        ||
++  #if defined(HAS_PULSEAUDIO)
++        driver == "PULSE"	||
++  #endif
+ #elif defined(TARGET_DARWIN_IOS)
+         driver == "DARWINIOS"  ||
+ #elif defined(TARGET_DARWIN_OSX)
+@@ -112,6 +118,10 @@ IAESink *CAESinkFactory::TrySink(std::string &driver, std::string &device, AEAud
+ #elif defined(TARGET_RASPBERRY_PI)
+   if (driver == "PI")
+     sink = new CAESinkPi();
++  #if defined(HAS_PULSEAUDIO)
++    if (driver == "PULSE")
++      sink = new CAESinkPULSE();
++  #endif
+   #if defined(HAS_ALSA)
+   if (driver == "ALSA")
+     sink = new CAESinkALSA();
+@@ -215,6 +225,16 @@ void CAESinkFactory::EnumerateEx(AESinkInfoList &list, bool force)
+   if(!info.m_deviceInfoList.empty())
+     list.push_back(info);
+   #endif
++  #if defined(HAS_PULSEAUDIO)
++  info.m_deviceInfoList.clear();
++  info.m_sinkName = "PULSE";
++  CAESinkPULSE::EnumerateDevicesEx(info.m_deviceInfoList, force);
++  if(!info.m_deviceInfoList.empty())
++  {
++    list.push_back(info);
++    return;
++  }
++  #endif
+ #elif defined(TARGET_DARWIN_IOS)
+ 
+   info.m_deviceInfoList.clear();
+@@ -261,21 +281,20 @@ void CAESinkFactory::EnumerateEx(AESinkInfoList &list, bool force)
+       CLog::Log(LOGNOTICE, "User specified Sink %s could not be enumerated", envSink.c_str());
+   }
+ 
+-  #if defined(HAS_PULSEAUDIO)
++  #if defined(HAS_ALSA)
+   info.m_deviceInfoList.clear();
+-  info.m_sinkName = "PULSE";
+-  CAESinkPULSE::EnumerateDevicesEx(info.m_deviceInfoList, force);
++  info.m_sinkName = "ALSA";
++  CAESinkALSA::EnumerateDevicesEx(info.m_deviceInfoList, force);
+   if(!info.m_deviceInfoList.empty())
+   {
+     list.push_back(info);
+-    return;
+   }
+   #endif
+ 
+-  #if defined(HAS_ALSA)
++  #if defined(HAS_PULSEAUDIO)
+   info.m_deviceInfoList.clear();
+-  info.m_sinkName = "ALSA";
+-  CAESinkALSA::EnumerateDevicesEx(info.m_deviceInfoList, force);
++  info.m_sinkName = "PULSE";
++  CAESinkPULSE::EnumerateDevicesEx(info.m_deviceInfoList, force);
+   if(!info.m_deviceInfoList.empty())
+   {
+     list.push_back(info);
+-- 
+2.9.3
+
+
+From 3e4d753a0c524b5556cd8c685a743b59c8d4b716 Mon Sep 17 00:00:00 2001
+From: fritsch <peter.fruehberger@gmail.com>
+Date: Fri, 29 Jan 2016 16:32:06 +0100
+Subject: [PATCH 15/27] change pulseaudio default device name to Bluetooth
+ Audio
+
+---
+ xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
+index 50d729b..6a4e3bb 100644
+--- a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
++++ b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
+@@ -397,13 +397,15 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
+     CAEDeviceInfo defaultDevice;
+     defaultDevice.m_deviceName = std::string("Default");
+     defaultDevice.m_displayName = std::string("Default");
+-    defaultDevice.m_displayNameExtra = std::string("Default Output Device (PULSEAUDIO)");
++    defaultDevice.m_displayNameExtra = std::string("Bluetooth Audio (PULSEAUDIO)");
+     defaultDevice.m_dataFormats.insert(defaultDevice.m_dataFormats.end(), defaultDataFormats, defaultDataFormats + ARRAY_SIZE(defaultDataFormats));
+     defaultDevice.m_channels = CAEChannelInfo(AE_CH_LAYOUT_2_0);
+     defaultDevice.m_sampleRates.assign(defaultSampleRates, defaultSampleRates + ARRAY_SIZE(defaultSampleRates));
+     defaultDevice.m_deviceType = AE_DEVTYPE_PCM;
+     defaultDevice.m_wantsIECPassthrough = true;
+     sinkStruct->list->push_back(defaultDevice);
++    // OE only wants the default device - so we are done here
++    return;
+   }
+   if (i && i->name)
+   {
+-- 
+2.9.3
+
+
+From b49d8f0508441bcd8ff23ec86a701cf48e2beddf Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:47:52 -0800
+Subject: [PATCH 16/27] [cmake] dont link pulseaudio mainloop
+
+---
+ project/cmake/modules/FindPulseAudio.cmake | 14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
+
+diff --git a/project/cmake/modules/FindPulseAudio.cmake b/project/cmake/modules/FindPulseAudio.cmake
+index 5761005..778b9e9 100644
+--- a/project/cmake/modules/FindPulseAudio.cmake
++++ b/project/cmake/modules/FindPulseAudio.cmake
+@@ -29,9 +29,6 @@ find_path(PULSEAUDIO_INCLUDE_DIR NAMES pulse/pulseaudio.h
+ find_library(PULSEAUDIO_LIBRARY NAMES pulse libpulse
+                                 PATHS ${PC_PULSEAUDIO_LIBDIR} ${PC_PULSEAUDIO_LIBRARY_DIRS})
+ 
+-find_library(PULSEAUDIO_MAINLOOP_LIBRARY NAMES pulse-mainloop pulse-mainloop-glib libpulse-mainloop-glib
+-                                         PATHS ${PC_PULSEAUDIO_LIBDIR} ${PC_PULSEAUDIO_LIBRARY_DIRS})
+-
+ if(PC_PULSEAUDIO_VERSION)
+   set(PULSEAUDIO_VERSION_STRING ${PC_PULSEAUDIO_VERSION})
+ elseif(PULSEAUDIO_INCLUDE_DIR AND EXISTS "${PULSEAUDIO_INCLUDE_DIR}/pulse/version.h")
+@@ -42,19 +39,14 @@ endif()
+ 
+ include(FindPackageHandleStandardArgs)
+ find_package_handle_standard_args(PulseAudio
+-                                  REQUIRED_VARS PULSEAUDIO_LIBRARY PULSEAUDIO_MAINLOOP_LIBRARY PULSEAUDIO_INCLUDE_DIR
++                                  REQUIRED_VARS PULSEAUDIO_LIBRARY PULSEAUDIO_INCLUDE_DIR
+                                   VERSION_VAR PULSEAUDIO_VERSION_STRING)
+ 
+ if(PULSEAUDIO_FOUND)
+   set(PULSEAUDIO_INCLUDE_DIRS ${PULSEAUDIO_INCLUDE_DIR})
+-  set(PULSEAUDIO_LIBRARIES ${PULSEAUDIO_LIBRARY} ${PULSEAUDIO_MAINLOOP_LIBRARY})
++  set(PULSEAUDIO_LIBRARIES ${PULSEAUDIO_LIBRARY})
+   set(PULSEAUDIO_DEFINITIONS -DHAVE_LIBPULSE=1)
+ 
+-  if(NOT TARGET PulseAudio::PulseAudioMainloop)
+-    add_library(PulseAudio::PulseAudioMainloop UNKNOWN IMPORTED)
+-    set_target_properties(PulseAudio::PulseAudioMainloop PROPERTIES
+-                                                         IMPORTED_LOCATION "${PULSEAUDIO_MAINLOOP_LIBRARY}")
+-  endif()
+   if(NOT TARGET PulseAudio::PulseAudio)
+     add_library(PulseAudio::PulseAudio UNKNOWN IMPORTED)
+     set_target_properties(PulseAudio::PulseAudio PROPERTIES
+@@ -65,4 +57,4 @@ if(PULSEAUDIO_FOUND)
+   endif()
+ endif()
+ 
+-mark_as_advanced(PULSEAUDIO_INCLUDE_DIR PULSEAUDIO_LIBRARY PULSEAUDIO_MAINLOOP_LIBRARY)
++mark_as_advanced(PULSEAUDIO_INCLUDE_DIR PULSEAUDIO_LIBRARY)
+-- 
+2.9.3
+
+
+From 3d41c6071e8c306d7d9f98a383655eb62c47ae9e Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:48:49 -0800
+Subject: [PATCH 17/27] [cmake] python remove intl and gmp requirement
+
+---
+ project/cmake/modules/FindPython.cmake | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/project/cmake/modules/FindPython.cmake b/project/cmake/modules/FindPython.cmake
+index d2035f6..5c7c426 100644
+--- a/project/cmake/modules/FindPython.cmake
++++ b/project/cmake/modules/FindPython.cmake
+@@ -16,8 +16,6 @@ find_path(PYTHON_INCLUDE_DIR NAMES Python.h PATHS ${PC_PYTHON_INCLUDE_DIRS} ${DE
+ if(CMAKE_CROSSCOMPILING)
+   find_library(FFI_LIBRARY ffi REQUIRED)
+   find_library(EXPAT_LIBRARY expat REQUIRED)
+-  find_library(INTL_LIBRARY intl REQUIRED)
+-  find_library(GMP_LIBRARY gmp REQUIRED)
+ 
+   if(NOT CORE_SYSTEM_NAME STREQUAL android)
+     set(PYTHON_DEP_LIBRARIES pthread dl util)
+-- 
+2.9.3
+
+
+From 0c8bdfa50e71dfeb8117041c85bc1092d80b09d6 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:49:16 -0800
+Subject: [PATCH 18/27] [cmake] remove texturepacker
+
+---
+ project/cmake/CMakeLists.txt | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/project/cmake/CMakeLists.txt b/project/cmake/CMakeLists.txt
+index 46df299..38c4232 100644
+--- a/project/cmake/CMakeLists.txt
++++ b/project/cmake/CMakeLists.txt
+@@ -281,10 +281,6 @@ foreach(skin ${SKINS})
+   copy_skin_to_buildtree(${dir} ${relative})
+ endforeach()
+ 
+-add_custom_target(pack-skins ALL
+-                  DEPENDS TexturePacker::TexturePacker export-files ${XBT_FILES})
+-set_target_properties(pack-skins PROPERTIES FOLDER "Build Utilities")
+-
+ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/system/players/VideoPlayer)
+ 
+ set(LIBCEC_SONAME "${CEC_SONAME}")
+@@ -328,7 +324,7 @@ else()
+   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
+   add_library(${APP_NAME_LC} SHARED ${CORE_MAIN_SOURCE} "${RESOURCES}" ${OTHER_FILES})
+ endif()
+-add_dependencies(${APP_NAME_LC} ${APP_NAME_LC}-libraries export-files pack-skins)
++add_dependencies(${APP_NAME_LC} ${APP_NAME_LC}-libraries export-files)
+ whole_archive(_MAIN_LIBRARIES ${core_DEPENDS})
+ target_link_libraries(${APP_NAME_LC} ${_MAIN_LIBRARIES} lib${APP_NAME_LC} ${DEPLIBS})
+ unset(_MAIN_LIBRARIES)
+-- 
+2.9.3
+
+
+From 8a5912faa562bfd03e2dde9a12853b3b6b8592da Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:49:56 -0800
+Subject: [PATCH 19/27] [cmake] allow static smbclient linking
+
+---
+ project/cmake/modules/FindSmbClient.cmake | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/project/cmake/modules/FindSmbClient.cmake b/project/cmake/modules/FindSmbClient.cmake
+index 6455cce..cda22e0 100644
+--- a/project/cmake/modules/FindSmbClient.cmake
++++ b/project/cmake/modules/FindSmbClient.cmake
+@@ -14,7 +14,7 @@
+ #
+ #   SmbClient::SmbClient   - The SmbClient library
+ 
+-if(PKGCONFIG_FOUND)
++if(PKG_CONFIG_FOUND)
+   pkg_check_modules(PC_SMBCLIENT smbclient QUIET)
+ endif()
+ 
+@@ -23,15 +23,35 @@ find_path(SMBCLIENT_INCLUDE_DIR NAMES libsmbclient.h
+ find_library(SMBCLIENT_LIBRARY NAMES smbclient
+                                PATHS ${PC_SMBCLIENT_LIBDIR})
+ 
++# check if smbclient libs are statically linked
++set(SMBCLIENT_LIB_TYPE SHARED)
++if(PC_SMBCLIENT_STATIC_LDFLAGS)
++  set(SMBCLIENT_LDFLAGS ${PC_SMBCLIENT_STATIC_LDFLAGS} CACHE STRING "smbclient linker flags" FORCE)
++  set(SMBCLIENT_LIB_TYPE STATIC)
++#  string(REGEX REPLACE ";" " " SMBCLIENT_STATIC_LIBRARIES ${PC_SMBCLIENTS_STATIC_LIBRARIES})
++#  foreach(_smblib IN LISTS ${SMBCLIENT_STATIC_LIBRARIES})
++#    string(TOUPPER ${_smblib}_LIBRARY SMBCLIENT_STATIC_LIBRARIES)
++#    find_library(${SMBCLIENT_STATIC_LIBRARIES} ${_smblib})
++#  endforeach()
++
++  find_library(TALLOC_LIBRARY talloc)
++  find_library(TDB_LIBRARY tdb)
++  find_library(TEVENT_LIBRARY tevent)
++  find_library(WBCLIENT_LIBRARY wbclient)
++  find_library(RESOLV_LIBRARY resolv)
++
++endif()
++
+ set(SMBCLIENT_VERSION ${PC_SMBCLIENT_VERSION})
+ 
+ include(FindPackageHandleStandardArgs)
+ find_package_handle_standard_args(SmbClient
+                                   REQUIRED_VARS SMBCLIENT_LIBRARY SMBCLIENT_INCLUDE_DIR
++                                  TALLOC_LIBRARY TDB_LIBRARY TEVENT_LIBRARY WBCLIENT_LIBRARY RESOLV_LIBRARY
+                                   VERSION_VAR SMBCLIENT_VERSION)
+ 
+ if(SMBCLIENT_FOUND)
+-  set(SMBCLIENT_LIBRARIES ${SMBCLIENT_LIBRARY})
++  set(SMBCLIENT_LIBRARIES ${SMBCLIENT_LIBRARY} ${TALLOC_LIBRARY} ${TDB_LIBRARY} ${TEVENT_LIBRARY} ${WBCLIENT_LIBRARY} ${RESOLV_LIBRARY})
+   set(SMBCLIENT_INCLUDE_DIRS ${SMBCLIENT_INCLUDE_DIR})
+   set(SMBCLIENT_DEFINITIONS -DHAVE_LIBSMBCLIENT=1)
+ 
+-- 
+2.9.3
+
+
+From 1a38f1f033ca32a3873e240482298f42b5be89c7 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:50:24 -0800
+Subject: [PATCH 20/27] [cmake] dont touch skins
+
+---
+ project/cmake/CMakeLists.txt              | 10 ----------
+ project/cmake/scripts/linux/Install.cmake |  9 ---------
+ 2 files changed, 19 deletions(-)
+
+diff --git a/project/cmake/CMakeLists.txt b/project/cmake/CMakeLists.txt
+index 38c4232..969862f 100644
+--- a/project/cmake/CMakeLists.txt
++++ b/project/cmake/CMakeLists.txt
+@@ -271,16 +271,6 @@ set_target_properties(gtest PROPERTIES FOLDER "External Projects")
+ copy_files_from_filelist_to_buildtree(${PROJECT_SOURCE_DIR}/installdata/common/*.txt
+                                       ${PROJECT_SOURCE_DIR}/installdata/${CORE_SYSTEM_NAME}/*.txt)
+ 
+-list(APPEND SKINS "${CORE_SOURCE_DIR}/addons/skin.estuary\;${CORE_SOURCE_DIR}")
+-list(APPEND SKINS "${CORE_SOURCE_DIR}/addons/skin.estouchy\;${CORE_SOURCE_DIR}")
+-
+-# These are skins that are copied into place from the source tree
+-foreach(skin ${SKINS})
+-  list(GET skin 0 dir)
+-  list(GET skin 1 relative)
+-  copy_skin_to_buildtree(${dir} ${relative})
+-endforeach()
+-
+ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/system/players/VideoPlayer)
+ 
+ set(LIBCEC_SONAME "${CEC_SONAME}")
+diff --git a/project/cmake/scripts/linux/Install.cmake b/project/cmake/scripts/linux/Install.cmake
+index 9a22f29..8617768 100644
+--- a/project/cmake/scripts/linux/Install.cmake
++++ b/project/cmake/scripts/linux/Install.cmake
+@@ -312,15 +312,6 @@ install(FILES ${CORE_SOURCE_DIR}/xbmc/addons/kodi-addon-dev-kit/include/kodi/kod
+         DESTINATION ${includedir}/${APP_NAME_LC}
+         COMPONENT kodi-peripheral-dev)
+ 
+-# Install XBT skin files
+-foreach(texture ${XBT_FILES})
+-  string(REPLACE "${CMAKE_BINARY_DIR}/" "" dir ${texture})
+-  get_filename_component(dir ${dir} DIRECTORY)
+-  install(FILES ${texture}
+-          DESTINATION ${datarootdir}/${APP_NAME_LC}/${dir}
+-          COMPONENT kodi)
+-endforeach()
+-
+ # Install extra stuff if it exists
+ if(EXISTS ${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/extra-installs)
+   install(CODE "file(STRINGS ${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/extra-installs dirs)
+-- 
+2.9.3
+
+
+From 1157632c6f85c7423b91b5e35b6a66d80e132659 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:51:28 -0800
+Subject: [PATCH 21/27] [cmake] add findIMX cmake module
+
+---
+ project/cmake/CMakeLists.txt        |  2 ++
+ project/cmake/modules/FindIMX.cmake | 35 +++++++++++++++++++++++++++++++++++
+ xbmc/linux/CMakeLists.txt           |  4 ++++
+ xbmc/video/videosync/CMakeLists.txt |  5 +++++
+ xbmc/windowing/egl/CMakeLists.txt   |  7 ++++++-
+ 5 files changed, 52 insertions(+), 1 deletion(-)
+ create mode 100644 project/cmake/modules/FindIMX.cmake
+
+diff --git a/project/cmake/CMakeLists.txt b/project/cmake/CMakeLists.txt
+index 969862f..5bccb5f 100644
+--- a/project/cmake/CMakeLists.txt
++++ b/project/cmake/CMakeLists.txt
+@@ -55,6 +55,7 @@ if(UNIX)
+   if(CORE_SYSTEM_NAME STREQUAL linux OR CORE_SYSTEM_NAME STREQUAL freebsd)
+     option(ENABLE_X11         "Enable X11 support?" ON)
+     option(ENABLE_AML         "Enable AML?" OFF)
++    option(ENABLE_IMX         "Enable IMX?" OFF)
+   endif()
+ endif()
+ # System options
+@@ -213,6 +214,7 @@ endif()
+ 
+ if(CORE_SYSTEM_NAME STREQUAL android OR CORE_SYSTEM_NAME STREQUAL linux)
+   core_optional_dep(AML)
++  core_optional_dep(IMX)
+ elseif(CORE_SYSTEM_NAME STREQUAL rbpi)
+   core_require_dep(MMAL)
+ endif()
+diff --git a/project/cmake/modules/FindIMX.cmake b/project/cmake/modules/FindIMX.cmake
+new file mode 100644
+index 0000000..4e1e838
+--- /dev/null
++++ b/project/cmake/modules/FindIMX.cmake
+@@ -0,0 +1,35 @@
++#.rst:
++# FindIMX
++# -------
++# Finds the IMX codec
++#
++# This will will define the following variables::
++#
++# IMX_FOUND - system has IMX
++# IMX_INCLUDE_DIRS - the IMX include directory
++# IMX_DEFINITIONS - the IMX definitions
++# IMX_LIBRARIES - the IMX libraries
++
++if(PKG_CONFIG_FOUND)
++  pkg_check_modules(IMX fslvpuwrap QUIET)
++endif()
++
++if(NOT IMX_FOUND)
++  find_path(IMX_INCLUDE_DIR vpu_wrapper.h
++                            PATH_SUFFIXES imx-mm/vpu)
++
++  find_library(FSLVPUWRAP_LIBRARY fslvpuwrap)
++  find_library(VPU_LIBRARY vpu)
++  find_library(G2D_LIBRARY g2d)
++
++  set(IMX_LIBRARIES ${FSLVPUWRAP_LIBRARY} ${VPU_LIBRARY} ${G2D_LIBRARY}
++      CACHE STRING "imx libraries" FORCE)
++endif()
++
++include(FindPackageHandleStandardArgs)
++find_package_handle_standard_args(IMX
++                                  REQUIRED_VARS IMX_INCLUDE_DIR IMX_LIBRARIES)
++
++list(APPEND IMXVPU_DEFINITIONS -DHAS_IMXVPU=1 -DLINUX -DEGL_API_FB)
++
++mark_as_advanced(IMX_INCLUDE_DIR IMX_LIBRARIES IMX_DEFINITIONS)
+diff --git a/xbmc/linux/CMakeLists.txt b/xbmc/linux/CMakeLists.txt
+index 754cc1e..931c10d 100644
+--- a/xbmc/linux/CMakeLists.txt
++++ b/xbmc/linux/CMakeLists.txt
+@@ -40,4 +40,8 @@ if(OMXLIB_FOUND)
+                       OMXCore.h)
+ endif()
+ 
++if(IMX_FOUND)
++  add_subdirectory(imx)
++endif()
++
+ core_add_library(linuxsupport)
+diff --git a/xbmc/video/videosync/CMakeLists.txt b/xbmc/video/videosync/CMakeLists.txt
+index 421af44..82f7169 100644
+--- a/xbmc/video/videosync/CMakeLists.txt
++++ b/xbmc/video/videosync/CMakeLists.txt
+@@ -35,6 +35,11 @@ if(CORE_SYSTEM_NAME STREQUAL android)
+   list(APPEND HEADERS VideoSyncAndroid.h)
+ endif()
+ 
++if(IMX_FOUND)
++  list(APPEND SOURCES VideoSyncIMX.cpp)
++  list(APPEND HEADERS VideoSyncIMX.h)
++endif()
++
+ if(SOURCES AND HEADERS)
+   core_add_library(video_sync)
+ endif()
+diff --git a/xbmc/windowing/egl/CMakeLists.txt b/xbmc/windowing/egl/CMakeLists.txt
+index 3ab603e..51e13ab 100644
+--- a/xbmc/windowing/egl/CMakeLists.txt
++++ b/xbmc/windowing/egl/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-if(OPENGLES_FOUND OR AML_FOUND OR MMAL_FOUND)
++if(OPENGLES_FOUND OR AML_FOUND OR IMX_FOUND OR MMAL_FOUND)
+   set(SOURCES EGLWrapper.cpp)
+ 
+   set(HEADERS EGLNativeType.h
+@@ -30,6 +30,11 @@ if(MMAL_FOUND)
+   list(APPEND HEADERS EGLNativeTypeRaspberryPI.h)
+ endif()
+ 
++if(IMX_FOUND)
++  list(APPEND SOURCES EGLNativeTypeIMX.cpp)
++  list(APPEND HEADERS EGLNativeTypeIMX.h)
++endif()
++
+ if(SOURCES)
+   core_add_library(windowing_egl)
+ endif()
+-- 
+2.9.3
+
+
+From 6c61ea7f8d6c7121457839c80273836071b2324e Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:52:19 -0800
+Subject: [PATCH 22/27] [cmake] disable wiiremote (bluetooth)
+
+---
+ project/cmake/scripts/linux/ExtraTargets.cmake | 5 -----
+ project/cmake/scripts/linux/Install.cmake      | 5 -----
+ 2 files changed, 10 deletions(-)
+
+diff --git a/project/cmake/scripts/linux/ExtraTargets.cmake b/project/cmake/scripts/linux/ExtraTargets.cmake
+index 2bb5f6f..f3bafbb 100644
+--- a/project/cmake/scripts/linux/ExtraTargets.cmake
++++ b/project/cmake/scripts/linux/ExtraTargets.cmake
+@@ -5,8 +5,3 @@ if(ENABLE_X11 AND X_FOUND AND XRANDR_FOUND)
+   add_executable(${APP_NAME_LC}-xrandr ${CORE_SOURCE_DIR}/xbmc-xrandr.c)
+   target_link_libraries(${APP_NAME_LC}-xrandr ${SYSTEM_LDFLAGS} ${X_LIBRARIES} m ${XRANDR_LIBRARIES})
+ endif()
+-
+-# WiiRemote
+-if(ENABLE_EVENTCLIENTS)
+-  add_subdirectory(${CORE_SOURCE_DIR}/tools/EventClients/Clients/WiiRemote build/WiiRemote)
+-endif()
+diff --git a/project/cmake/scripts/linux/Install.cmake b/project/cmake/scripts/linux/Install.cmake
+index 8617768..6ecfd12 100644
+--- a/project/cmake/scripts/linux/Install.cmake
++++ b/project/cmake/scripts/linux/Install.cmake
+@@ -267,11 +267,6 @@ if(ENABLE_EVENTCLIENTS)
+           DESTINATION ${bindir}
+           COMPONENT kodi-eventclients-ps3)
+ 
+-  # Install kodi-eventclients-wiiremote
+-  install(PROGRAMS ${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/WiiRemote/${APP_NAME_LC}-wiiremote
+-          DESTINATION ${bindir}
+-          COMPONENT kodi-eventclients-wiiremote)
+-
+   # Install kodi-eventclients-xbmc-send
+   install(PROGRAMS "${CORE_SOURCE_DIR}/tools/EventClients/Clients/Kodi Send/kodi-send.py"
+           RENAME ${APP_NAME_LC}-send
+-- 
+2.9.3
+
+
+From 85bd4aa43fe4d80396d88d3142e7b3c69f4f1e21 Mon Sep 17 00:00:00 2001
+From: Stephan Raue <stephan@openelec.tv>
+Date: Sun, 18 Dec 2016 11:53:39 -0800
+Subject: [PATCH 23/27] devinput mappings
+
+---
+ system/Lircmap.xml | 46 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 45 insertions(+), 1 deletion(-)
+
+diff --git a/system/Lircmap.xml b/system/Lircmap.xml
+index faf1f72..a42a4de 100644
+--- a/system/Lircmap.xml
++++ b/system/Lircmap.xml
+@@ -493,6 +493,7 @@
+ 		<teletext>KEY_TEXT</teletext>
+ 		<clear>KEY_DELETE</clear>
+ 	</remote>
++
+ 	<remote device="mediacenter">
+ 		<pause>pause</pause>
+ 		<stop>stop</stop>
+@@ -544,50 +545,93 @@
+ 		<up>KEY_UP</up>
+ 		<down>KEY_DOWN</down>
+ 		<select>KEY_OK</select>
+-		<enter>KEY_ENTER</enter>
++		<select>KEY_ENTER</select>
++		<select>KEY_KPENTER</select>
++		<select>KEY_SELECT</select>
+ 		<clear>KEY_DELETE</clear>
++		<clear>KEY_ESC</clear>
+ 		<start>KEY_MEDIA</start>
++		<start>KEY_HOME</start>
+ 		<back>KEY_EXIT</back>
++		<back>KEY_BACK</back>
++		<back>KEY_BACKSPACE</back>
++		<back>KEY_ESC</back>
++		<back>KEY_E</back>
+ 		<record>KEY_RECORD</record>
+ 		<play>KEY_PLAY</play>
++		<play>KEY_PLAYPAUSE</play>
+ 		<pause>KEY_PAUSE</pause>
+ 		<stop>KEY_STOP</stop>
++		<stop>KEY_STOPCD</stop>
+ 		<forward>KEY_FASTFORWARD</forward>
++		<forward>KEY_FFORWARD</forward>
++		<forward>KEY_FORWARD</forward>
+ 		<reverse>KEY_REWIND</reverse>
+ 		<volumeplus>KEY_VOLUMEUP</volumeplus>
++		<volumeplus>KEY_VOLUP</volumeplus>
+ 		<volumeminus>KEY_VOLUMEDOWN</volumeminus>
++		<volumeminus>KEY_VOLDOWN</volumeminus>
+ 		<pageplus>KEY_CHANNELUP</pageplus>
++		<pageplus>KEY_CHUP</pageplus>
++		<pageplus>KEY_PAGEUP</pageplus>
+ 		<pageminus>KEY_CHANNELDOWN</pageminus>
++		<pageminus>KEY_CHDOWN</pageminus>
++		<pageminus>KEY_PAGEDOWN</pageminus>
+ 		<skipplus>KEY_NEXT</skipplus>
++		<skipplus>KEY_NEXTSONG</skipplus>
+ 		<skipminus>KEY_PREVIOUS</skipminus>
++		<skipminus>KEY_PREVIOUSSONG</skipminus>
+ 		<title>KEY_EPG</title>
++		<title>KEY_TV2</title>
++		<title>KEY_CONTEXT_MENU</title>
+ 		<subtitle>KEY_SUBTITLE</subtitle>
++		<subtitle>KEY_TITLE</subtitle>
+ 		<language>KEY_LANGUAGE</language>
+ 		<info>KEY_INFO</info>
++		<info>KEY_PROPS</info>
+ 		<display>KEY_ZOOM</display>
++		<display>KEY_ANGLE</display>
+ 		<mute>KEY_MUTE</mute>
+ 		<power>KEY_POWER</power>
++		<power>KEY_SLEEP</power>
++		<power>KEY_WAKEUP</power>
+ 		<eject>KEY_EJECTCD</eject>
+ 		<eject>KEY_EJECTCLOSECD</eject>
+ 		<menu>KEY_DVD</menu>
+ 		<menu>KEY_MENU</menu>
+ 		<myvideo>KEY_VIDEO</myvideo>
+ 		<mymusic>KEY_AUDIO</mymusic>
++		<mymusic>KEY_MP3</mymusic>
+ 		<mypictures>KEY_CAMERA</mypictures>
++		<mypictures>KEY_IMAGES</mypictures>
+ 		<livetv>KEY_TUNER</livetv>
+ 		<mytv>KEY_TV</mytv>
++		<mytv>KEY_PVR</mytv>
+ 		<teletext>KEY_TEXT</teletext>
++		<one>KEY_1</one>
+ 		<one>KEY_NUMERIC_1</one>
++		<two>KEY_2</two>
+ 		<two>KEY_NUMERIC_2</two>
++		<three>KEY_3</three>
+ 		<three>KEY_NUMERIC_3</three>
++		<four>KEY_4</four>
+ 		<four>KEY_NUMERIC_4</four>
++		<five>KEY_5</five>
+ 		<five>KEY_NUMERIC_5</five>
++		<six>KEY_6</six>
+ 		<six>KEY_NUMERIC_6</six>
++		<seven>KEY_7</seven>
+ 		<seven>KEY_NUMERIC_7</seven>
++		<eight>KEY_8</eight>
+ 		<eight>KEY_NUMERIC_8</eight>
++		<nine>KEY_9</nine>
+ 		<nine>KEY_NUMERIC_9</nine>
++		<zero>KEY_0</zero>
+ 		<zero>KEY_NUMERIC_0</zero>
++		<star>KEY_STAR</star>
++		<star>KEY_KPASTERISK</star>
+ 		<star>KEY_NUMERIC_STAR</star>
++		<hash>KEY_POUND</hash>
+ 		<hash>KEY_NUMERIC_POUND</hash>
+ 		<red>KEY_RED</red>
+ 		<green>KEY_GREEN</green>
+-- 
+2.9.3
+
+
+From 7f4e03a34e09bc0cf6811373df44505c46507ea3 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 18 Dec 2016 11:54:21 -0800
+Subject: [PATCH 24/27] disable using tv menu language by default
+
+---
+ system/peripherals.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/system/peripherals.xml b/system/peripherals.xml
+index d5704b2..1760fd5 100644
+--- a/system/peripherals.xml
++++ b/system/peripherals.xml
+@@ -18,7 +18,7 @@
+     <setting key="cec_wake_screensaver" type="bool" value="1" label="36010" order="7" />
+     <setting key="standby_pc_on_tv_standby" type="enum" value="13011" label="36029" order="8" lvalues="36028|13005|13011|13009|36044|36045" />
+     <setting key="standby_tv_on_pc_standby" type="bool" value="1" label="36026" order="9" />
+-    <setting key="use_tv_menu_language" type="bool" value="1" label="36018" order="10" />
++    <setting key="use_tv_menu_language" type="bool" value="0" label="36018" order="10" />
+     <setting key="pause_playback_on_deactivate" type="bool" value="1" label="36033" configurable="0" />
+     <setting key="pause_or_stop_playback_on_deactivate" type="enum" value="231" label="36033" order="11" lvalues="231|36044|36045" />
+     <setting key="connected_device" type="enum" label="36019" value="36037" lvalues="36037|36038" order="12" />
+-- 
+2.9.3
+
+
+From f71ad7c3ff7c26ecd45b03fe9ec391a8465d6da4 Mon Sep 17 00:00:00 2001
+From: fritsch <peter.fruehberger@gmail.com>
+Date: Sun, 18 Dec 2016 11:55:41 -0800
+Subject: [PATCH 25/27] ae settings samplerate
+
+---
+ xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAE.cpp | 8 ++++++++
+ xbmc/settings/AdvancedSettings.cpp                   | 3 +++
+ xbmc/settings/AdvancedSettings.h                     | 2 ++
+ 3 files changed, 13 insertions(+)
+
+diff --git a/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAE.cpp b/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAE.cpp
+index f5671b8..f757754 100644
+--- a/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAE.cpp
++++ b/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAE.cpp
+@@ -31,6 +31,7 @@ using namespace ActiveAE;
+ #include "cores/AudioEngine/Encoders/AEEncoderFFmpeg.h"
+ 
+ #include "settings/Settings.h"
++#include "settings/AdvancedSettings.h"
+ #include "windowing/WindowingFactory.h"
+ #include "utils/log.h"
+ 
+@@ -1674,6 +1675,13 @@ void CActiveAE::ApplySettingsToFormat(AEAudioFormat &format, AudioSettings &sett
+       format.m_channelLayout = AE_CH_LAYOUT_2_0;
+     }
+ 
++    // OpenELEC workaround to define a minimum sample Rate for broken AVRs
++    if (format.m_sampleRate < g_advancedSettings.m_minimumSampleRate)
++    {
++      format.m_sampleRate = g_advancedSettings.m_minimumSampleRate;
++      CLog::Log(LOGDEBUG, "CActiveAE::MinimumSampleRate - Forced by use to samplerate %d", format.m_sampleRate);
++    }
++
+     if (m_settings.config == AE_CONFIG_FIXED)
+     {
+       format.m_sampleRate = m_settings.samplerate;
+diff --git a/xbmc/settings/AdvancedSettings.cpp b/xbmc/settings/AdvancedSettings.cpp
+index cc37998..f104610 100644
+--- a/xbmc/settings/AdvancedSettings.cpp
++++ b/xbmc/settings/AdvancedSettings.cpp
+@@ -111,6 +111,8 @@ void CAdvancedSettings::Initialize()
+     return;
+ 
+   m_audioHeadRoom = 0;
++  // OpenELEC workaround for broken AVRs
++  m_minimumSampleRate = 8000;
+   m_ac3Gain = 12.0f;
+   m_audioApplyDrc = -1.0f;
+   m_VideoPlayerIgnoreDTSinWAV = false;
+@@ -498,6 +500,7 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
+   {
+     XMLUtils::GetFloat(pElement, "ac3downmixgain", m_ac3Gain, -96.0f, 96.0f);
+     XMLUtils::GetInt(pElement, "headroom", m_audioHeadRoom, 0, 12);
++    XMLUtils::GetInt(pElement, "minimumsamplerate", m_minimumSampleRate, 8000, 192000);
+     XMLUtils::GetString(pElement, "defaultplayer", m_audioDefaultPlayer);
+     // 101 on purpose - can be used to never automark as watched
+     XMLUtils::GetFloat(pElement, "playcountminimumpercent", m_audioPlayCountMinimumPercent, 0.0f, 101.0f);
+diff --git a/xbmc/settings/AdvancedSettings.h b/xbmc/settings/AdvancedSettings.h
+index fc526d1..6b12bbb 100644
+--- a/xbmc/settings/AdvancedSettings.h
++++ b/xbmc/settings/AdvancedSettings.h
+@@ -137,6 +137,8 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
+     static void SettingOptionsLoggingComponentsFiller(const CSetting *setting, std::vector< std::pair<std::string, int> > &list, int &current, void *data);
+ 
+     int m_audioHeadRoom;
++    // OpenELEC workaround for minimum sample Rate
++    int m_minimumSampleRate;
+     float m_ac3Gain;
+     std::string m_audioDefaultPlayer;
+     float m_audioPlayCountMinimumPercent;
+-- 
+2.9.3
+
+
+From 2d9a7a93801606b050d45ac4831d21f217e9d0a4 Mon Sep 17 00:00:00 2001
+From: fritsch <peter.fruehberger@gmail.com>
+Date: Thu, 11 Aug 2016 07:32:48 +0100
+Subject: [PATCH 26/27] Detect intel gpus and use limited range by default
+
+---
+ xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.cpp | 11 +++++++++++
+ xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h   |  5 +++++
+ xbmc/settings/Settings.cpp                               |  9 +++++++++
+ 3 files changed, 25 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.cpp
+index e8071bd..83db224 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.cpp
+@@ -22,6 +22,8 @@
+ #include "settings/Settings.h"
+ #include "settings/lib/Setting.h"
+ #include "windowing/WindowingFactory.h"
++#include "utils/SysfsUtils.h"
++#include "utils/StringUtils.h"
+ 
+ bool CDVDVideoCodec::IsSettingVisible(const std::string &condition, const std::string &value, const CSetting *setting, void *data)
+ {
+@@ -72,3 +74,12 @@ bool CDVDVideoCodec::IsCodecDisabled(const std::map<AVCodecID, std::string> &map
+   }
+   return false; // don't disable what we don't have
+ }
++
++bool CDVDVideoCodec::IsIntel()
++{
++  // check if we are running on intel hardware
++  std::string gpuvendor;
++  SysfsUtils::GetString("/proc/fb", gpuvendor);
++
++  return StringUtils::EndsWith(gpuvendor, "inteldrmfb");
++}
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h
+index a2da9de..cc8a574 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h
+@@ -257,6 +257,11 @@ public:
+   static bool IsSettingVisible(const std::string &condition, const std::string &value, const CSetting *setting, void *data);
+ 
+   /**
++   * Check if we are using an Intel GPU
++   */
++  static bool IsIntel();
++
++  /**
+    * Interact with user settings so that user disabled codecs are disabled
+    */
+   static bool IsCodecDisabled(const std::map<AVCodecID, std::string> &map, AVCodecID id);
+diff --git a/xbmc/settings/Settings.cpp b/xbmc/settings/Settings.cpp
+index 9940b6a..ba69735 100644
+--- a/xbmc/settings/Settings.cpp
++++ b/xbmc/settings/Settings.cpp
+@@ -32,6 +32,7 @@
+ #include "cores/AudioEngine/AEFactory.h"
+ #include "cores/playercorefactory/PlayerCoreFactory.h"
+ #include "cores/VideoPlayer/VideoRenderers/BaseRenderer.h"
++#include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h"
+ #include "filesystem/File.h"
+ #include "guilib/GraphicContext.h"
+ #include "guilib/GUIAudioManager.h"
+@@ -914,6 +915,14 @@ void CSettings::InitializeDefaults()
+ 
+   if (g_application.IsStandAlone())
+     ((CSettingInt*)m_settingsManager->GetSetting(CSettings::SETTING_POWERMANAGEMENT_SHUTDOWNSTATE))->SetDefault(POWERSTATE_SHUTDOWN);
++
++#if ((defined(HAVE_LIBVA) || defined(HAVE_LIBVDPAU)))
++  bool isIntel = CDVDVideoCodec::IsIntel();
++  // Intel driver is operating in passthrough mode so use limited range by default
++  ((CSettingBool*)GetSetting(CSettings::SETTING_VIDEOSCREEN_LIMITEDRANGE))->SetDefault(isIntel);
++  ((CSettingBool*)GetSetting(CSettings::SETTING_VIDEOPLAYER_USEVAAPI))->SetDefault(isIntel);
++  ((CSettingBool*)GetSetting(CSettings::SETTING_VIDEOPLAYER_USEVDPAU))->SetDefault(!isIntel);
++#endif
+ }
+ 
+ void CSettings::InitializeOptionFillers()
+-- 
+2.9.3
+
+
+From 37874e900bfe47438b13eb8c284cba21180df2f8 Mon Sep 17 00:00:00 2001
+From: MilhouseVH <milhouseVH.github@nmacleod.com>
+Date: Sun, 18 Dec 2016 11:57:10 -0800
+Subject: [PATCH 27/27] RPi framebuffer reset
+
+---
+ xbmc/XBApplicationEx.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/xbmc/XBApplicationEx.cpp b/xbmc/XBApplicationEx.cpp
+index 34102f5..bbffa35 100644
+--- a/xbmc/XBApplicationEx.cpp
++++ b/xbmc/XBApplicationEx.cpp
+@@ -78,6 +78,10 @@ INT CXBApplicationEx::Run(CFileItemList &playlist)
+     KODI::MESSAGING::CApplicationMessenger::GetInstance().PostMsg(TMSG_PLAYLISTPLAYER_PLAY, -1);
+   }
+ 
++#ifdef TARGET_RASPBERRY_PI
++  system("/sbin/fbset -g 1 1 1 1 32");
++#endif
++
+   // Run xbmc
+   while (!m_bStop)
+   {
+-- 
+2.9.3
+
