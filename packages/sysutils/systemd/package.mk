@@ -222,6 +222,9 @@ post_makeinstall_target() {
   ln -sf /usr/bin/systemctl $INSTALL/usr/sbin/shutdown
   ln -sf /usr/bin/systemctl $INSTALL/usr/sbin/telinit
 
+  # fix default systemd-fsck@.service unit
+  sed -e 's,systemd-quotacheck.service ,,' -i $INSTALL/usr/lib/systemd/system/systemd-fsck@.service
+
   # strip
   debug_strip $INSTALL/usr
 

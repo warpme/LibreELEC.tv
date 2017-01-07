@@ -1,0 +1,29 @@
+# dont run in "installer" mode
+IMPORT{cmdline}="installer"
+ENV{installer}=="1", GOTO="exit"
+
+# check for blockdevices, /dev/sd*, /dev/sr* and /dev/mmc*
+SUBSYSTEM!="block", KERNEL!="sd*|sr*|mmc*", GOTO="exit"
+
+# check for special partitions we dont want mount
+IMPORT{builtin}="blkid"
+ENV{ID_FS_LABEL}=="EFI|BOOT|Recovery|RECOVERY|SETTINGS|boot|root0|share0", GOTO="exit"
+
+# /dev/sd* and /dev/mmc* ith partitions/disk and filesystems only and /dev/sr* disks only
+KERNEL=="sd*|mmc*", ENV{DEVTYPE}=="partition", ENV{ID_FS_USAGE}=="filesystem", GOTO="harddisk"
+KERNEL=="sr*", ENV{DEVTYPE}=="disk", GOTO="optical"
+GOTO="exit"
+
+# mount or umount for hdds
+LABEL="harddisk"
+ACTION=="add", RUN+="/usr/bin/systemd-run /usr/bin/systemd-mount --quiet --automount=0 /dev/%k"
+ACTION=="remove", RUN+="/usr/bin/systemd-run /usr/bin/systemd-umount --quiet --automount=0 /dev/%k"
+GOTO="exit"
+
+# mount or umount for opticals
+LABEL="optical"
+ACTION=="add|change", RUN+="/usr/bin/systemd-run /usr/bin/systemd-umount --quiet /dev/%k && /usr/bin/systemd-run /usr/bin/systemd-mount --quiet --automount=0 /dev/%k"
+GOTO="exit"
+
+# Exit
+LABEL="exit"
