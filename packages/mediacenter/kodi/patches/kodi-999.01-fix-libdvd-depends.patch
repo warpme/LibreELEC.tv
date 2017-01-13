@@ -1,0 +1,17 @@
+commit 689ef790b09cc11dd8cafeb8ea27badaba6d76b9
+Author: Lukas Rusak <lorusak@gmail.com>
+Date:   Fri Jan 13 12:02:36 2017 -0800
+
+    [cmake] fix libdvd depends build
+
+diff --git a/project/cmake/modules/FindLibDvd.cmake b/project/cmake/modules/FindLibDvd.cmake
+index 59c6f96..dfab33b 100644
+--- a/project/cmake/modules/FindLibDvd.cmake
++++ b/project/cmake/modules/FindLibDvd.cmake
+@@ -1,5 +1,5 @@
+ if(NOT WIN32)
+-  if(KODI_DEPENDSBUILD)
++  if(NOT KODI_DEPENDSBUILD)
+     set(_dvdlibs dvdread dvdnav)
+     set(_handlevars LIBDVD_INCLUDE_DIRS DVDREAD_LIBRARY DVDNAV_LIBRARY)
+     if(ENABLE_DVDCSS)
