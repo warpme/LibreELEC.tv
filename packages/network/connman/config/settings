@@ -6,3 +6,7 @@ Enable=true
 
 [WiFi]
 Enable=true
+
+[Gadget]
+Enable=true
+
