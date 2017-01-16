@@ -1,5 +1,5 @@
 [Unit]
-Description=Debug Shell on /dev/console
+Description=Debug Shell on /dev/ttyGS0
 DefaultDependencies=no
 ConditionKernelCommandLine=console
 
@@ -11,7 +11,7 @@ ExecStart=/bin/sh
 Restart=always
 RestartSec=0
 StandardInput=tty
-TTYPath=/dev/console
+TTYPath=/dev/ttyGS0
 TTYReset=yes
 TTYVHangup=yes
 KillMode=process
