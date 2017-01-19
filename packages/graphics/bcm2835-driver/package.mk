@@ -69,7 +69,3 @@ makeinstall_target() {
   mkdir -p $INSTALL/opt/vc
     ln -sf /usr/lib $INSTALL/opt/vc/lib
 }
-
-post_install() {
-  enable_service unbind-console.service
-}
