@@ -351,7 +351,6 @@ post_makeinstall_target() {
 }
 
 post_install() {
-  enable_service kodi.target
   enable_service kodi-autostart.service
   enable_service kodi-cleanlogs.service
   enable_service kodi-halt.service

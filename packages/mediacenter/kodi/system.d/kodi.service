@@ -1,8 +1,11 @@
 [Unit]
 Description=Kodi Media Center
-After=network-online.target graphical.target
-Requires=graphical.target
+Conflicts=plymouth-quit.service rescue.target
+After=network-online.target plymouth-start.service plymouth-quit.service
+Requires=network-online.target
 Wants=network-online.target
+
+OnFailure=plymouth-quit.service
 
 [Service]
 Environment=__GL_YIELD=USLEEP
@@ -23,4 +26,5 @@ StartLimitInterval=0
 LimitNOFILE=16384
 
 [Install]
-WantedBy=kodi.target
+Alias=display-manager.service
+WantedBy=graphical.target
