@@ -26,3 +26,10 @@ echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 echo 50 > /sys/devices/system/cpu/cpufreq/ondemand/up_threshold
 echo 100000 > /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate
 echo 50 > /sys/devices/system/cpu/cpufreq/ondemand/sampling_down_factor
+
+# Enable first framebuffer
+echo 0 > /sys/class/graphics/fb0/blank
+
+# Disable second framebuffer
+echo 1 > /sys/class/graphics/fb1/blank
+

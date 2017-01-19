@@ -34,6 +34,11 @@
   /usr/bin/busybox mount -t proc proc /proc
   /usr/bin/busybox mount -t sysfs sysfs /sys
 
+  # create directory and mount recursive directories
+  /usr/bin/busybox mkdir -p /dev/pts
+  /usr/bin/busybox mount -t devpts -o ptmxmode=0666 devpts /dev/pts
+  /usr/bin/busybox mount -o bind /dev/pts/ptmx /dev/ptmx
+
   # common functions
   . /functions
 
@@ -516,39 +521,18 @@
           . /splash/splash.conf
         fi
 
-        # Select splash image based on current native resolution
-        if [ -z "$SPLASHIMAGE" ]; then
-          vres="$(fbset 2>/dev/null | awk '/geometry/ { print $3 }')"
+        /usr/sbin/plymouthd --mode=boot --attach-to-session
+        /usr/bin/plymouth show-splash
 
-          if [ -f /flash/oemsplash.png -o -f /flash/oemsplash-1080.png ]; then
-            if [ -n "$vres" -a -f /flash/oemsplash-$vres.png ]; then
-              SPLASHIMAGE="/flash/oemsplash-$vres.png"
-            elif [ -f /flash/oemsplash-1080.png ]; then
-              SPLASHIMAGE="/flash/oemsplash-1080.png"
-            else
-              SPLASHIMAGE="/flash/oemsplash.png"
-            fi
-          else
-            if [ -n "$vres" -a -f /splash/splash-$vres.png ]; then
-              SPLASHIMAGE="/splash/splash-$vres.png"
-            else
-              SPLASHIMAGE="/splash/splash-1080.png"
-            fi
-          fi
-        fi
-
-        if [ -n "$SPLASHIMAGE" -a -f "$SPLASHIMAGE" ]; then
-          ply-image $SPLASHIMAGE > /dev/null 2>&1
-        fi
-
-        debug_msg "Framebuffer vertical res: $vres"
-        debug_msg "Framebuffer splash image: $SPLASHIMAGE"
       fi
     fi
   }
 
   do_reboot() {
-    echo "System reboots now..."
+
+  /usr/bin/plymouth change-mode --shutdown
+
+  echo "System reboots now..."
 
     # syncing filesystem
     sync
@@ -749,6 +733,10 @@
   }
 
   check_update() {
+
+    /usr/bin/plymouth change-mode --updates
+    /usr/bin/plymouth system-update --progress=0
+
     progress "Checking for updates"
     UPDATE_TAR=`ls -1 "$UPDATE_DIR"/*.tar 2>/dev/null | head -n 1`
     UPDATE_IMG_GZ=`ls -1 "$UPDATE_DIR"/*.img.gz 2>/dev/null | head -n 1`
@@ -972,9 +960,12 @@
     else
       update_file "Kernel" "$UPDATE_KERNEL" "/flash/$IMAGE_KERNEL"
     fi
+    /usr/bin/plymouth system-update --progress=40
     update_file "System" "$UPDATE_SYSTEM" "/flash/$IMAGE_SYSTEM"
+    /usr/bin/plymouth system-update --progress=80
     update_bootloader
     do_cleanup
+    /usr/bin/plymouth system-update --progress=100
     do_reboot
   }
 
@@ -1068,6 +1059,7 @@
   fi
 
   # switch to new sysroot and start real init
+  /usr/bin/plymouth update-root-fs --new-root-dir=/sysroot
   exec /usr/bin/busybox switch_root /sysroot /usr/lib/systemd/systemd $INIT_ARGS $INIT_UNIT
 
   error "switch_root" "Error in initramfs. Could not switch to new root"
