@@ -178,6 +178,15 @@ post_makeinstall_target() {
   # remove networkd
   rm -rf $INSTALL/usr/lib/systemd/network
 
+  # remove systemd-ask-password
+  rm -rf $INSTALL/usr/bin/systemd-ask-password
+  rm -rf $INSTALL/usr/bin/systemd-tty-ask-password-agent
+  rm -rf $INSTALL/usr/lib/systemd/system/systemd-ask-password-wall.service
+  rm -rf $INSTALL/usr/lib/systemd/system/systemd-ask-password-console.path
+  rm -rf $INSTALL/usr/lib/systemd/system/systemd-ask-password-console.service
+  rm -rf $INSTALL/usr/lib/systemd/system/multi-user.target.wants/systemd-ask-password-wall.path
+  rm -rf $INSTALL/usr/lib/systemd/system/sysinit.target.wants/systemd-ask-password-console.path
+
   # tune journald.conf
   sed -e "s,^.*Compress=.*$,Compress=no,g" -i $INSTALL/etc/systemd/journald.conf
   sed -e "s,^.*SplitMode=.*$,SplitMode=none,g" -i $INSTALL/etc/systemd/journald.conf
