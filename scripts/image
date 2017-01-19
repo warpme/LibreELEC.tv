@@ -197,6 +197,8 @@ $SCRIPTS/install network
 # Devtools... (not for Release)
 [ "$TESTING" = "yes" ] && $SCRIPTS/install testing
 
+$SCRIPTS/install plymouth
+
 # Install gdb in all builds, including releases
 $SCRIPTS/install debug
 
