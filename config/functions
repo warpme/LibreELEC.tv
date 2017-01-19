@@ -285,6 +285,9 @@ enable_service () {
         ln -sf ../${unit} ${target_dir}/$unit_dir/${target}.wants/
       fi
     done
+  else
+    mkdir -p ${target_dir}/$unit_dir/${target}.wants
+    ln -sf ../${unit} ${target_dir}/$unit_dir/${target}.wants/
   fi
   for target in `grep '^Alias' $target_dir/$unit_dir/$unit | cut -f2 -d=` ; do
     if [ -n "$target" ]; then
