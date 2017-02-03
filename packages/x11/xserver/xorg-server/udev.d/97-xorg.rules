@@ -33,6 +33,7 @@ LABEL="subsystem_pci"
 DRIVER=="i915", ENV{xorg_driver}="i915", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xorg-configure@i915.service"
 DRIVER=="amdgpu", ENV{xorg_driver}="amdgpu", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xorg-configure@amdgpu.service"
 DRIVER=="radeon", ENV{xorg_driver}="radeon", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xorg-configure@radeon.service"
+DRIVER=="qxl", ENV{xorg_driver}="qxl", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xorg-configure@qxl.service"
 GOTO="end_video"
 
 LABEL="end_video"
