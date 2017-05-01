@@ -33,6 +33,12 @@ elif [ "$UBOOT_VERSION" = "hardkernel" ]; then
   PKG_SITE="https://github.com/hardkernel/u-boot"
   PKG_URL="https://github.com/hardkernel/u-boot/archive/$PKG_VERSION.tar.gz"
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET gcc-linaro-aarch64-elf:host gcc-linaro-arm-eabi:host"
+elif [ "$UBOOT_VERSION" = "default" ]; then
+  PKG_VERSION="2017.09"
+  PKG_SITE=""
+  PKG_URL="ftp://ftp.denx.de/pub/u-boot/u-boot-$PKG_VERSION.tar.bz2"
+  PKG_SOURCE_DIR="u-boot-$PKG_VERSION"
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET dtc:host"
 else
   exit 0
 fi
@@ -61,7 +67,9 @@ pre_configure_target() {
   MAKEFLAGS=-j1
 
 # copy compiler-gcc5.h to compiler-gcc6. for fake building
+if [ -f include/linux/compiler-gcc5.h ]; then
   cp include/linux/compiler-gcc5.h include/linux/compiler-gcc6.h
+fi
 }
 
 make_target() {
