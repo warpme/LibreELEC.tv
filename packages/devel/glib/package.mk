@@ -18,14 +18,14 @@
 ################################################################################
 
 PKG_NAME="glib"
-PKG_VERSION="2.46.2"
-PKG_SHA256="5031722e37036719c1a09163cc6cf7c326e4c4f1f1e074b433c156862bd733db"
+PKG_VERSION="2.52.1"
+PKG_SHA256="948c26b817f2d77e2a6cdd5082c60a51bf5dea854890286a1d5d4ccde5ce586f"
 PKG_ARCH="any"
 PKG_LICENSE="LGPL"
 PKG_SITE="http://www.gtk.org/"
-PKG_URL="http://ftp.gnome.org/pub/gnome/sources/glib/2.46/$PKG_NAME-$PKG_VERSION.tar.xz"
-PKG_DEPENDS_TARGET="toolchain zlib libffi Python:host"
-PKG_DEPENDS_HOST="libffi:host"
+PKG_URL="http://ftp.gnome.org/pub/gnome/sources/glib/2.52/$PKG_NAME-$PKG_VERSION.tar.xz"
+PKG_DEPENDS_TARGET="toolchain zlib libffi Python:host util-linux"
+PKG_DEPENDS_HOST="libffi:host pcre:host"
 PKG_SECTION="devel"
 PKG_SHORTDESC="glib: C support library"
 PKG_LONGDESC="GLib is a library which includes support routines for C such as lists, trees, hashes, memory allocation, and many other things."
@@ -33,7 +33,7 @@ PKG_LONGDESC="GLib is a library which includes support routines for C such as li
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="yes"
 
-PKG_CONFIGURE_OPTS_HOST="--enable-static --disable-shared"
+PKG_CONFIGURE_OPTS_HOST="--enable-static --disable-shared --disable-libmount"
 PKG_CONFIGURE_OPTS_TARGET="ac_cv_func_mmap_fixed_mapped=yes \
                            ac_cv_func_posix_getpwuid_r=yes \
                            ac_cv_func_posix_getgrgid_r=yes \
