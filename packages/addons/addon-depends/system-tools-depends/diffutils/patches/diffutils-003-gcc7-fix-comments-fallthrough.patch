@@ -1,0 +1,46 @@
+From 8db62fe5ec9b81899c39461c4380fcf2bb7a9d82 Mon Sep 17 00:00:00 2001
+From: Jim Meyering <meyering@fb.com>
+Date: Sun, 2 Oct 2016 10:56:55 -0700
+Subject: build: avoid GCC 7's new warnings
+
+* src/util.c (get_funky_string): Adjust comment so that GCC 7's
+-Wimplicit-fallthrough recognizes it.
+* src/diff3.c (main): Cast boolean MERGE to "int" to avoid this:
+diff3.c:341:25: error: '~' on a boolean expression \
+[-Werror=bool-operation]
+---
+ src/diff3.c | 4 +++-
+ src/util.c  | 2 +-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/src/diff3.c b/src/diff3.c
+index b2de4b6..055d275 100644
+--- a/src/diff3.c
++++ b/src/diff3.c
+@@ -338,7 +338,9 @@ main (int argc, char **argv)
+ 	}
+     }
+ 
+-  edscript = incompat & ~merge;  /* -AeExX3 without -m implies ed script.  */
++  /* -AeExX3 without -m implies ed script.  */
++  edscript = incompat & ~(int) merge;
++
+   show_2nd |= ~incompat & merge;  /* -m without -AeExX3 implies -A.  */
+   flagging |= ~incompat & merge;
+ 
+diff --git a/src/util.c b/src/util.c
+index bef2bff..c95dc77 100644
+--- a/src/util.c
++++ b/src/util.c
+@@ -383,7 +383,7 @@ get_funky_string (char **dest, const char **src, bool equals_end,
+                   state = ST_END; /* End */
+                   break;
+                 }
+-              /* else fall through */
++              /* fall through */
+             default:
+               *(q++) = *(p++);
+               ++count;
+-- 
+cgit v1.0-41-gc330
+
