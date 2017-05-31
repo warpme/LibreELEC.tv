@@ -17,13 +17,14 @@
 ################################################################################
 
 PKG_NAME="dtc"
-PKG_VERSION="1.4.4"
-PKG_SHA256="2d1226634d71655466ebbd090d2873068c4918fbd5c433b91ead8ad08b9a5843"
+PKG_VERSION="fe50bd1"
+PKG_SHA256="d8dd1a0893bd2ea3f3aea2c78eb6ffc0062ab23bc1303eb29f96e4f0c2f38453"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://git.kernel.org/pub/scm/utils/dtc/dtc.git/"
 PKG_URL="https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot/$PKG_VERSION.tar.gz"
 PKG_SOURCE_DIR="$PKG_VERSION"
+PKG_DEPENDS_HOST="Python:host swig:host"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_SECTION="tools"
 PKG_SHORTDESC="The Device Tree Compiler"
@@ -37,7 +38,17 @@ makeinstall_target() {
     cp -P $PKG_BUILD/dtc $INSTALL/usr/bin
 }
 
+PKG_MAKE_OPTS_HOST="dtc libfdt"
+
 makeinstall_host() {
   mkdir -p $TOOLCHAIN/bin
     cp -P $PKG_BUILD/dtc $TOOLCHAIN/bin
+    cp -P $PKG_BUILD/libfdt/libfdt.so $TOOLCHAIN/lib
+}
+
+post_makeinstall_host() {
+  python ./pylibfdt/setup.py build_ext --inplace
+  python ./pylibfdt/setup.py install --prefix=$TOOLCHAIN
+
+  touch $TOOLCHAIN/lib/python2.7/site-packages/pylibfdt/__init__.py
 }
