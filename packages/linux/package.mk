@@ -80,7 +80,7 @@ if [ "$TARGET_ARCH" = "x86_64" ]; then
 fi
 
 if [ "$BUILD_ANDROID_BOOTIMG" = "yes" ]; then
-  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET mkbootimg:host"
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET mkbootimg:host dtc:host"
 fi
 
 post_patch() {
@@ -197,8 +197,15 @@ make_target() {
   LDFLAGS="" make $KERNEL_TARGET $KERNEL_MAKE_EXTRACMD
 
   if [ "$BUILD_ANDROID_BOOTIMG" = "yes" ]; then
-    LDFLAGS="" mkbootimg --kernel arch/$TARGET_KERNEL_ARCH/boot/$KERNEL_TARGET --ramdisk $BUILD/image/initramfs.cpio \
-      $ANDROID_BOOTIMG_OPTIONS --output arch/$TARGET_KERNEL_ARCH/boot/boot.img
+    dtbTool -o dt.img -s 2048 $KERNEL_DTB_DIRECTORY
+
+    mkbootimg --kernel=arch/$TARGET_KERNEL_ARCH/boot/$KERNEL_TARGET \
+              --ramdisk=$BUILD/image/initramfs.cpio \
+              --dt dt.img \
+              $ANDROID_BOOTIMG_OPTIONS \
+              --cmdline "$KERNEL_CMDLINE" \
+              --output arch/$TARGET_KERNEL_ARCH/boot/boot.img
+
     mv -f arch/$TARGET_KERNEL_ARCH/boot/boot.img arch/$TARGET_KERNEL_ARCH/boot/$KERNEL_TARGET
   fi
 }
