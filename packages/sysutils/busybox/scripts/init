@@ -115,6 +115,14 @@
             ;;
         esac
         ;;
+      debug_disk=*)
+        debug_disk="${arg#*=}"
+        case $debug_disk in
+          /dev/*|LABEL=*|UUID=*)
+            RUN_FSCK_DISKS="$RUN_FSCK_DISKS $disk"
+            ;;
+        esac
+        ;;
       wol_mac=*)
         wol_mac="${arg#*=}"
         ;;
@@ -981,7 +989,9 @@
   prepare_sysroot() {
     progress "Preparing system"
 
-    if [ "$SYSTEM_TORAM" = "no" -o "$INSTALLED_MEMORY" -lt "$SYSTEM_TORAM_LIMIT" ]; then
+    if [ -n "$debug_disk" ]; then
+      mount_part "$debug_disk" "/sysroot" "rw,noatime"
+    elif [ "$SYSTEM_TORAM" = "no" -o "$INSTALLED_MEMORY" -lt "$SYSTEM_TORAM_LIMIT" ]; then
       mount_part "/flash/$IMAGE_SYSTEM" "/sysroot" "ro,loop"
     else
       cp /flash/$IMAGE_SYSTEM /dev/$IMAGE_SYSTEM
