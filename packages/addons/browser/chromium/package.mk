@@ -26,7 +26,8 @@ PKG_ARCH="x86_64"
 PKG_LICENSE="Mixed"
 PKG_SITE="http://www.chromium.org/Home"
 PKG_URL="https://commondatastorage.googleapis.com/chromium-browser-official/$PKG_NAME-$PKG_VERSION.tar.xz"
-PKG_DEPENDS_TARGET="toolchain pciutils dbus libXcomposite libXcursor libXtst alsa-lib bzip2 yasm nss libXScrnSaver libexif ninja:host libpng harfbuzz atk gtk+ libva-vdpau-driver unclutter xdotool"
+PKG_DEPENDS_HOST="toolchain ninja:host harfbuzz yasm nss libpng gtk+ dbus"
+PKG_DEPENDS_TARGET="chromium:host pciutils libXcomposite libXcursor libXtst alsa-lib bzip2 libXScrnSaver libexif atk libva-vdpau-driver unclutter xdotool"
 PKG_SECTION="browser"
 PKG_SHORTDESC="Chromium Browser: the open-source web browser from Google"
 PKG_LONGDESC="Chromium Browser ($PKG_VERSION): the open-source web browser from Google"
@@ -37,58 +38,48 @@ PKG_ADDON_NAME="Chromium"
 PKG_ADDON_TYPE="xbmc.python.script"
 PKG_ADDON_PROVIDES="executable"
 
-pre_make_target() {
-  strip_lto
+# Google API keys (see http://www.chromium.org/developers/how-tos/api-keys)
+# Note: These are for OpenELEC use ONLY. For your own distribution, please
+# get your own set of keys.
+google_api_key=AIzaSyAQ6L9vt9cnN4nM0weaa6Y38K4eyPvtKgI
+google_default_client_id=740889307901-4bkm4e0udppnp1lradko85qsbnmkfq3b.apps.googleusercontent.com
+google_default_client_secret=9TJlhL661hvShQub4cWhANXa
 
+chromium_flags=(
+  'is_clang=false'
+  'clang_use_chrome_plugins=false'
+  'symbol_level=0'
+  'is_debug=false'
+  'fatal_linker_warnings=false'
+  'treat_warnings_as_errors=false'
+  'fieldtrial_testing_like_official_build=true'
+  'remove_webcore_debug_symbols=true'
+  'ffmpeg_branding="Chrome"'
+  'proprietary_codecs=true'
+  'link_pulseaudio=true'
+  'linux_use_bundled_binutils=false'
+  'use_allocator="none"'
+  'use_cups=false'
+  'use_gconf=false'
+  'use_gnome_keyring=false'
+  'use_gold=false'
+  'use_gtk3=false'
+  'use_kerberos=false'
+  'use_pulseaudio=false'
+  'use_sysroot=true'
+  'use_vulcanize=false'
+  "target_sysroot=\"${SYSROOT_PREFIX}\""
+  'enable_hangout_services_extension=true'
+  'enable_widevine=true'
+  'enable_nacl=false'
+  'enable_nacl_nonsfi=false'
+  "google_api_key=\"${google_api_key}\""
+  "google_default_client_id=\"${google_default_client_id}\""
+  "google_default_client_secret=\"${google_default_client_secret}\""
+)
+
+make_host() {
   sed -i -e 's/@WIDEVINE_VERSION@/Pinkie Pie/' third_party/widevine/cdm/stub/widevine_cdm_version.h
-}
-
-make_target() {
-  export LDFLAGS="$LDFLAGS -ludev"
-  export LD=$CXX
-
-  # Use Python 2
-  find . -name '*.py' -exec sed -i -r "s|/usr/bin/python$|$TOOLCHAIN/bin/python|g" {} +
-
-  # Google API keys (see http://www.chromium.org/developers/how-tos/api-keys)
-  # Note: These are for OpenELEC use ONLY. For your own distribution, please
-  # get your own set of keys.
-
-  _google_api_key=AIzaSyAQ6L9vt9cnN4nM0weaa6Y38K4eyPvtKgI
-  _google_default_client_id=740889307901-4bkm4e0udppnp1lradko85qsbnmkfq3b.apps.googleusercontent.com
-  _google_default_client_secret=9TJlhL661hvShQub4cWhANXa
-
-  local _flags=(
-    'is_clang=false'
-    'clang_use_chrome_plugins=false'
-    'symbol_level=0'
-    'is_debug=false'
-    'fatal_linker_warnings=false'
-    'treat_warnings_as_errors=false'
-    'fieldtrial_testing_like_official_build=true'
-    'remove_webcore_debug_symbols=true'
-    'ffmpeg_branding="Chrome"'
-    'proprietary_codecs=true'
-    'link_pulseaudio=true'
-    'linux_use_bundled_binutils=false'
-    'use_allocator="none"'
-    'use_cups=false'
-    'use_gconf=false'
-    'use_gnome_keyring=false'
-    'use_gold=false'
-    'use_gtk3=false'
-    'use_kerberos=false'
-    'use_pulseaudio=false'
-    'use_sysroot=true'
-    "target_sysroot=\"${SYSROOT_PREFIX}\""
-    'enable_hangout_services_extension=true'
-    'enable_widevine=true'
-    'enable_nacl=false'
-    'enable_nacl_nonsfi=false'
-    "google_api_key=\"${_google_api_key}\""
-    "google_default_client_id=\"${_google_default_client_id}\""
-    "google_default_client_secret=\"${_google_default_client_secret}\""
-  )
 
   # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
   local _system_libs=(
@@ -113,11 +104,23 @@ make_target() {
 
   ./build/linux/unbundle/replace_gn_files.py --system-libraries "${_system_libs}"
   ./third_party/libaddressinput/chromium/tools/update-strings.py
+  ./tools/gn/bootstrap/bootstrap.py --gn-gen-args "${chromium_flags[*]}"
+}
 
-  ./tools/gn/bootstrap/bootstrap.py --gn-gen-args "${_flags[*]}"
-  ./out/Release/gn gen out/Release --args="${_flags[*]}" --script-executable=$TOOLCHAIN/bin/python
+makeinstall_host() {
+  :
+}
 
-  ninja -C out/Release chrome chrome_sandbox widevinecdmadapter
+pre_make_target() {
+  strip_lto
+}
+
+make_target() {
+  export LDFLAGS="$LDFLAGS -ludev"
+  export LD=$CXX
+
+  ./out/Release/gn gen out/Release --args="${chromium_flags[*]}" --script-executable=$TOOLCHAIN/bin/python
+  ninja -j $CONCURRENCY_MAKE_LEVEL -C out/Release chrome chrome_sandbox widevinecdmadapter
 }
 
 makeinstall_target() {
