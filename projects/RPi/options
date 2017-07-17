@@ -163,3 +163,6 @@ fi
   if [ "$DEVICE" = "Slice" -o "$DEVICE" = "Slice3" ]; then
     ADDITIONAL_DRIVERS="$ADDITIONAL_DRIVERS slice-drivers"
   fi
+
+  # build and install CEC adapter support (yes / no)
+    CEC_SUPPORT="no"
