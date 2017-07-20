@@ -71,3 +71,7 @@ hdmi_ignore_cec_init=1
 ################################################################################
 [all]
 include distroconfig.txt
+
+avoid_warnings=2
+dtoverlay=vc4-kms-v3d
+mask_gpu_interrupt1=0x100
