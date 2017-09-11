@@ -1,0 +1,12 @@
+diff -Nur a/r7p0/src/devicedrv/mali/common/mali_gp_job.c b/r7p0/src/devicedrv/mali/common/mali_gp_job.c
+--- a/r7p0/src/devicedrv/mali/common/mali_gp_job.c	2017-08-22 16:29:06.000000000 +0200
++++ b/r7p0/src/devicedrv/mali/common/mali_gp_job.c	2017-10-01 19:36:35.415657365 +0200
+@@ -133,7 +133,7 @@
+ 				goto fail1;
+ 			}
+ 
+-			memory_list = (u32 __user *)(uintptr_t)uargs->deferred_mem_list;
++			memory_list = (u32 __user *)(uintptr_t)job->uargs.deferred_mem_list;
+ 
+ 			if (0 != _mali_osk_copy_from_user(job->varying_list, memory_list, sizeof(u32) * job->uargs.deferred_mem_num)) {
+ 				MALI_PRINT_ERROR(("Mali GP job: Failed to copy varying list from user space!\n"));
