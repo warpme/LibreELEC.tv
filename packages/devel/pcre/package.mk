@@ -46,6 +46,12 @@ PKG_CONFIGURE_OPTS_TARGET="--disable-shared \
              --enable-unicode-properties \
              --with-gnu-ld"
 
+pre_configure_host() {
+  CFLAGS="$CFLAGS -fPIC"
+  CXXFLAGS="$CXXFLAGS -fPIC"
+  LDFLAGS="$LDFLAGS -fPIC"
+}
+
 pre_configure_target() {
   CFLAGS="$CFLAGS -fPIC"
   CXXFLAGS="$CXXFLAGS -fPIC"
