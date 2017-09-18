@@ -39,10 +39,9 @@ HOST_CONFIGURE_OPTS="--prefix=$TOOLCHAIN \
   --localstatedir=$TOOLCHAIN/var \
   --extra-cflags=-I$TOOLCHAIN/include \
   --extra-ldflags=-L$TOOLCHAIN/lib \
-  --static \
   --disable-vnc \
   --disable-werror \
   --disable-blobs \
   --disable-system \
-  --disable-user \
-  --disable-docs"
+  --disable-docs \
+  --target-list=${TARGET_ARCH}-linux-user"
