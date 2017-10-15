@@ -32,6 +32,7 @@ PKG_LONGDESC="gpu-sunxi: Linux drivers for Mali GPUs found in Allwinner SoCs"
 
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
+PKG_IS_KERNEL_PKG="yes"
 
 DRIVER_DIR=$PKG_BUILD/src/devicedrv/mali/
 
@@ -54,6 +55,6 @@ make_target() {
 }
 
 makeinstall_target() {
-  mkdir -p $INSTALL/usr/lib/modules/$(get_module_dir)/$PKG_NAME
-    cp $DRIVER_DIR/*.ko $INSTALL/usr/lib/modules/$(get_module_dir)/$PKG_NAME
+  mkdir -p $INSTALL/$(get_full_module_dir)/$PKG_NAME
+    cp $DRIVER_DIR/*.ko $INSTALL/$(get_full_module_dir)/$PKG_NAME
 }
