@@ -113,6 +113,7 @@ PKG_CONFIGURE_OPTS_TARGET="CC_FOR_BUILD=$HOST_CC \
                            --with-sysroot=$SYSROOT_PREFIX"
 
 post_makeinstall_target() {
+  # Similar hack is needed on EGL, GLES* front. Might as well drop it and test the GLVND?
   if [ "$DISPLAYSERVER" = "x11" ]; then
     # rename and relink for cooperate with nvidia drivers
     rm -rf $INSTALL/usr/lib/libGL.so
