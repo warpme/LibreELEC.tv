@@ -112,12 +112,6 @@ PKG_CONFIGURE_OPTS_TARGET="CC_FOR_BUILD=$HOST_CC \
                            --with-vulkan-drivers=no \
                            --with-sysroot=$SYSROOT_PREFIX"
 
-pre_configure_target() {
-  if [ "$DISPLAYSERVER" = "x11" ]; then
-    export LIBS="-lxcb-dri3 -lxcb-dri2 -lxcb-xfixes -lxcb-present -lxcb-sync -lxshmfence -lz"
-  fi
-}
-
 post_makeinstall_target() {
   if [ "$DISPLAYSERVER" = "x11" ]; then
     # rename and relink for cooperate with nvidia drivers
