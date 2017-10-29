@@ -52,6 +52,7 @@ get_graphicdrivers() {
       LLVM_SUPPORT="yes"
       COMPOSITE_SUPPORT="yes"
       VDPAU_SUPPORT="yes"
+      VAAPI_SUPPORT="yes"
     fi
 
     if [ "$drv" = "r600" ]; then
@@ -60,6 +61,7 @@ get_graphicdrivers() {
       LLVM_SUPPORT="yes"
       COMPOSITE_SUPPORT="yes"
       VDPAU_SUPPORT="yes"
+      VAAPI_SUPPORT="yes"
     fi
 
     if [ "$drv" = "radeonsi" ]; then
@@ -68,6 +70,7 @@ get_graphicdrivers() {
       LLVM_SUPPORT="yes"
       COMPOSITE_SUPPORT="yes"
       VDPAU_SUPPORT="yes"
+      VAAPI_SUPPORT="yes"
     fi
 
     if [ "$drv" = "vmware" ]; then
@@ -82,8 +85,6 @@ get_graphicdrivers() {
 
     if [ "$drv" = "vc4" ]; then
       GALLIUM_DRIVERS="$GALLIUM_DRIVERS,vc4"
-      VAAPI_SUPPORT="no"
-      VDPAU_SUPPORT="no"
     fi
 
   done
