@@ -40,7 +40,8 @@ if [ "$DISPLAYSERVER" = "x11" ]; then
 else
   PKG_DEPENDS_TARGET="toolchain Python2:host expat libdrm"
   MESA_DRI="--enable-dri --disable-dri3"
-  MESA_GLX="--disable-glx --disable-driglx-direct --disable-glx-tls"
+  # The glx in glx-tls is a misnomer - there's nothing glx in it.
+  MESA_GLX="--disable-glx --disable-driglx-direct --enable-glx-tls"
   MESA_EGL_PLATFORMS="--with-platforms=drm"
 fi
 
