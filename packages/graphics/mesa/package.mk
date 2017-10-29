@@ -63,6 +63,13 @@ else
   MESA_VDPAU="--disable-vdpau"
 fi
 
+if [ "$VAAPI_SUPPORT" = "yes" -a "$GALLIUM_DRIVERS" != "" ]; then
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET libva"
+  MESA_VAAPI="--enable-vaapi"
+else
+  MESA_VAAPI="--disable-vaapi"
+fi
+
 XA_CONFIG="--disable-xa"
 for drv in $GRAPHIC_DRIVERS; do
   [ "$drv" = "vmware" ] && XA_CONFIG="--enable-xa"
@@ -98,7 +105,7 @@ PKG_CONFIGURE_OPTS_TARGET="CC_FOR_BUILD=$HOST_CC \
                            --disable-xvmc \
                            $MESA_VDPAU \
                            --disable-omx \
-                           --disable-va \
+                           $MESA_VAAPI \
                            --disable-opencl \
                            --enable-opencl-icd \
                            --disable-gallium-tests \
