@@ -18,8 +18,8 @@
 ################################################################################
 
 PKG_NAME="libdrm"
-PKG_VERSION="2.4.85"
-PKG_SHA256="64e4cd87eaee38ae60b2984ef02b66159b9bdd33030040db2a04339cf15f6173"
+PKG_VERSION="2.4.86"
+PKG_SHA256="4b010002ce158b4b6537ddb5a0f94a628be19727a71f1ab556a276829989072b"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="http://dri.freedesktop.org"
