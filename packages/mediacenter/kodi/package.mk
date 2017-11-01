@@ -17,8 +17,8 @@
 ################################################################################
 
 PKG_NAME="kodi"
-PKG_VERSION="9d82343"
-PKG_SHA256="c22b044ca692798049b731a69bec501b88fb41a59304b9d3b85d51331d2bdea7"
+PKG_VERSION="82b7222"
+#PKG_SHA256="c22b044ca692798049b731a69bec501b88fb41a59304b9d3b85d51331d2bdea7"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.kodi.tv"
@@ -168,7 +168,7 @@ else
 fi
 
 if [ "$VAAPI_SUPPORT" = yes ]; then
-  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET libva"
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET libva intel-vaapi-driver"
   KODI_VAAPI="-DENABLE_VAAPI=ON"
 else
   KODI_VAAPI="-DENABLE_VAAPI=OFF"
