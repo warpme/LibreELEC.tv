@@ -1,0 +1,233 @@
+From 97521196d07975e2be1858c8846d5f09c82310ef Mon Sep 17 00:00:00 2001
+From: Mark Thompson <sw@jkqxz.net>
+Date: Sun, 9 Jul 2017 22:28:53 +0100
+Subject: [PATCH 1/2] Add a new interface for exporting surfaces
+
+Signed-off-by: Mark Thompson <sw@jkqxz.net>
+---
+ va/va.c         | 17 ++++++++++++++++
+ va/va.h         | 62 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ va/va_backend.h | 11 +++++++++-
+ 3 files changed, 89 insertions(+), 1 deletion(-)
+
+diff --git a/va/va.c b/va/va.c
+index 38a618a2..ed2f38e8 100644
+--- a/va/va.c
++++ b/va/va.c
+@@ -1292,6 +1292,23 @@ vaReleaseBufferHandle(VADisplay dpy, VABufferID buf_id)
+     return ctx->vtable->vaReleaseBufferHandle(ctx, buf_id);
+ }
+ 
++VAStatus
++vaExportSurfaceHandle(VADisplay dpy, VASurfaceID surface_id,
++                      uint32_t mem_type, uint32_t flags,
++                      void *descriptor)
++{
++    VADriverContextP ctx;
++
++    CHECK_DISPLAY(dpy);
++    ctx = CTX(dpy);
++
++    if (!ctx->vtable->vaExportSurfaceHandle)
++        return VA_STATUS_ERROR_UNIMPLEMENTED;
++    return ctx->vtable->vaExportSurfaceHandle(ctx, surface_id,
++                                              mem_type, flags,
++                                              descriptor);
++}
++
+ VAStatus vaBeginPicture (
+     VADisplay dpy,
+     VAContextID context,
+diff --git a/va/va.h b/va/va.h
+index 601aa051..4042f95f 100644
+--- a/va/va.h
++++ b/va/va.h
+@@ -2618,6 +2618,68 @@ vaAcquireBufferHandle(VADisplay dpy, VABufferID buf_id, VABufferInfo *buf_info);
+ VAStatus
+ vaReleaseBufferHandle(VADisplay dpy, VABufferID buf_id);
+ 
++/** @name vaExportSurfaceHandle() flags
++ *
++ * @{
++ */
++/** Export surface to be read by external API. */
++#define VA_EXPORT_SURFACE_READ_ONLY        0x0001
++/** Export surface to be written by external API. */
++#define VA_EXPORT_SURFACE_WRITE_ONLY       0x0002
++/** Export surface to be both read and written by external API. */
++#define VA_EXPORT_SURFACE_READ_WRITE       0x0003
++/** Export surface with separate layers.
++ *
++ * For example, NV12 surfaces should be exported as two separate
++ * planes for luma and chroma.
++ */
++#define VA_EXPORT_SURFACE_SEPARATE_LAYERS  0x0004
++/** Export surface with composed layers.
++ *
++ * For example, NV12 surfaces should be exported as a single NV12
++ * composed object.
++ */
++#define VA_EXPORT_SURFACE_COMPOSED_LAYERS  0x0008
++
++/** @} */
++
++/**
++ * \brief Export a handle to a surface for use with an external API
++ *
++ * The exported handles are owned by the caller, and the caller is
++ * responsible for freeing them when no longer needed (e.g. by closing
++ * DRM PRIME file descriptors).
++ *
++ * This does not perform any synchronisation.  If the contents of the
++ * surface will be read, vaSyncSurface() must be called before doing so.
++ * If the contents of the surface are written, then all operations must
++ * be completed externally before using the surface again by via VA-API
++ * functions.
++ *
++ * @param[in] dpy          VA display.
++ * @param[in] surface_id   Surface to export.
++ * @param[in] mem_type     Memory type to export to.
++ * @param[in] flags        Combination of flags to apply
++ *   (VA_EXPORT_SURFACE_*).
++ * @param[out] descriptor  Pointer to the descriptor structure to fill
++ *   with the handle details.  The type of this structure depends on
++ *   the value of mem_type.
++ *
++ * @return Status code:
++ * - VA_STATUS_SUCCESS:    Success.
++ * - VA_STATUS_ERROR_INVALID_DISPLAY:  The display is not valid.
++ * - VA_STATUS_ERROR_UNIMPLEMENTED:  The driver does not implement
++ *     this interface.
++ * - VA_STATUS_ERROR_INVALID_SURFACE:  The surface is not valid, or
++ *     the surface is not exportable in the specified way.
++ * - VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE:  The driver does not
++ *     support exporting surfaces to the specified memory type.
++ */
++VAStatus vaExportSurfaceHandle(VADisplay dpy,
++                               VASurfaceID surface_id,
++                               uint32_t mem_type, uint32_t flags,
++                               void *descriptor);
++
+ /**
+  * Render (Video Decode/Encode/Processing) Pictures
+  *
+diff --git a/va/va_backend.h b/va/va_backend.h
+index 39663e12..b3d73613 100644
+--- a/va/va_backend.h
++++ b/va/va_backend.h
+@@ -436,8 +436,17 @@ struct VADriverVTable
+             VABufferID          buf_id          /* in */
+         );
+ 
++        VAStatus
++        (*vaExportSurfaceHandle)(
++            VADriverContextP    ctx,
++            VASurfaceID         surface_id,     /* in */
++            uint32_t            mem_type,       /* in */
++            uint32_t            flags,          /* in */
++            void               *descriptor      /* out */
++        );
++
+         /** \brief Reserved bytes for future use, must be zero */
+-        unsigned long reserved[64];
++        unsigned long reserved[63];
+ };
+ 
+ struct VADriverContext
+
+From f146af77c01602ac8cba0ba36d0ba3fd39ae11f1 Mon Sep 17 00:00:00 2001
+From: Mark Thompson <sw@jkqxz.net>
+Date: Thu, 28 Sep 2017 20:24:23 +0100
+Subject: [PATCH 2/2] Add a new DRM PRIME memory type
+
+This is more flexible than the existing DRM PRIME type, allowing multiple
+objects and planes with different formats and modifiers.  It supports
+export only via vaExportSurfaceHandle().
+
+Fixes #10.
+
+Signed-off-by: Mark Thompson <sw@jkqxz.net>
+---
+ va/va_drmcommon.h | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 61 insertions(+), 1 deletion(-)
+
+diff --git a/va/va_drmcommon.h b/va/va_drmcommon.h
+index 3bad528a..c8e63f25 100644
+--- a/va/va_drmcommon.h
++++ b/va/va_drmcommon.h
+@@ -27,6 +27,10 @@
+ #ifndef VA_DRM_COMMON_H
+ #define VA_DRM_COMMON_H
+ 
++#include <stddef.h>
++#include <stdint.h>
++
++
+ /** \brief DRM authentication type. */
+ enum {
+     /** \brief Disconnected. */
+@@ -72,7 +76,63 @@ struct drm_state {
+ 
+ /** \brief Kernel DRM buffer memory type.  */
+ #define VA_SURFACE_ATTRIB_MEM_TYPE_KERNEL_DRM		0x10000000
+-/** \brief DRM PRIME memory type. */
++/** \brief DRM PRIME memory type (old version)
++ *
++ * This supports only single objects with restricted memory layout.
++ * Used with VASurfaceAttribExternalBuffers.
++ */
+ #define VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME		0x20000000
++/** \brief DRM PRIME memory type
++ *
++ * Used with VADRMPRIMESurfaceDescriptor.
++ */
++#define VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2          0x40000000
++
++/**
++ * \brief External buffer descriptor for a DRM PRIME surface.
++ *
++ * This can currently only be used for export.
++ *
++ * For export, call vaAcquireSurfaceHandle() with mem_type set to
++ * VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2 and pass a pointer to an
++ * instance of this structure to fill.
++ */
++typedef struct _VADRMPRIMESurfaceDescriptor {
++    /** Pixel format fourcc of the whole surface (VA_FOURCC_*). */
++    uint32_t fourcc;
++    /** Width of the surface. */
++    unsigned int width;
++    /** Height of the surface. */
++    unsigned int height;
++    /** Number of distinct DRM objects making up the surface. */
++    unsigned int num_objects;
++    /** Description of each object. */
++    struct {
++        /** DRM PRIME file descriptor for this object. */
++        int fd;
++        /** Total size of this object (may include regions which are
++         *  not part of the surface). */
++        size_t size;
++        /** Format modifier applied to this object. */
++        uint64_t drm_format_modifier;
++    } objects[4];
++    /** Number of layers making up the surface. */
++    unsigned int num_layers;
++    /** Description of each layer in the surface. */
++    struct {
++        /** DRM format fourcc of this layer (DRM_FOURCC_*). */
++        uint32_t drm_format;
++        /** Number of planes in this layer. */
++        int num_planes;
++        /** Index in the objects array of the object containing each
++         *  plane. */
++        int object_index[4];
++        /** Offset within the object of each plane. */
++        ptrdiff_t offset[4];
++        /** Pitch of each plane. */
++        ptrdiff_t pitch[4];
++    } layers[4];
++} VADRMPRIMESurfaceDescriptor;
++
+ 
+ #endif /* VA_DRM_COMMON_H */
