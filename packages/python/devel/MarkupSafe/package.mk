@@ -23,7 +23,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://pypi.python.org/pypi/MarkupSafe"
 PKG_URL="https://pypi.python.org/packages/source/M/MarkupSafe/$PKG_NAME-$PKG_VERSION.tar.gz"
-PKG_DEPENDS_HOST="Python:host setuptools:host"
+PKG_DEPENDS_HOST="Python2:host setuptools:host"
 PKG_PRIORITY="optional"
 PKG_SECTION="python/devel"
 PKG_SHORTDESC="MarkupSafe: Implements a XML/HTML/XHTML Markup safe string for Python"
@@ -37,5 +37,5 @@ make_host() {
 }
 
 makeinstall_host() {
-  python setup.py install --prefix=$ROOT/$TOOLCHAIN
+  python setup.py install --prefix=$TOOLCHAIN
 }
