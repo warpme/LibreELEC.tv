@@ -1,0 +1,26 @@
+Reported-by: Lukas Rusak <lorusak at gmail.com>
+Cc: Lukas Rusak <lorusak at gmail.com>
+Fixes: 63e11ac2b5c ("configure: error out if building VA w/o supported
+platform")
+Signed-off-by: Emil Velikov <emil.l.velikov at gmail.com>
+---
+ configure.ac | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 945241bcb0e..e3261915285 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -2158,7 +2158,9 @@ if test "x$enable_xvmc" = xyes -o \
+         "x$enable_vdpau" = xyes -o \
+         "x$enable_omx_bellagio" = xyes -o \
+         "x$enable_va" = xyes; then
+-    PKG_CHECK_MODULES([VL], [x11-xcb xcb xcb-dri2 >= $XCBDRI2_REQUIRED])
++    if echo $platforms | grep -q "x11"; then
++        PKG_CHECK_MODULES([VL], [x11-xcb xcb xcb-dri2 >= $XCBDRI2_REQUIRED])
++    fi
+     need_gallium_vl_winsys=yes
+ fi
+ AM_CONDITIONAL(NEED_GALLIUM_VL_WINSYS, test "x$need_gallium_vl_winsys" = xyes)
+-- 
+2.14.1

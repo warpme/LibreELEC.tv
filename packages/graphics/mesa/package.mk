@@ -17,19 +17,22 @@
 ################################################################################
 
 PKG_NAME="mesa"
-PKG_VERSION="17.2.3"
-PKG_SHA256="a0b0ec8f7b24dd044d7ab30a8c7e6d3767521e245f88d4ed5dd93315dc56f837"
+PKG_VERSION="17.3.0-rc2"
+PKG_SHA256="5afde2aab45a604f171a2fcc0e395c870c253b37bae8b5c2581d6efbb35f3afb"
 PKG_ARCH="any"
 PKG_LICENSE="OSS"
 PKG_SITE="http://www.mesa3d.org/"
-PKG_URL="ftp://freedesktop.org/pub/mesa/$PKG_NAME-$PKG_VERSION.tar.xz"
+PKG_URL="https://github.com/mesa3d/mesa/archive/$PKG_NAME-$PKG_VERSION.tar.gz"
+PKG_SOURCE_DIR="$PKG_NAME-$PKG_NAME-$PKG_VERSION"
+PKG_DEPENDS_TARGET="toolchain Python2:host expat libdrm Mako:host"
 PKG_SECTION="graphics"
 PKG_SHORTDESC="mesa: 3-D graphics library with OpenGL API"
 PKG_LONGDESC="Mesa is a 3-D graphics library with an API which is very similar to that of OpenGL*. To the extent that Mesa utilizes the OpenGL command syntax or state machine, it is being used with authorization from Silicon Graphics, Inc. However, the author makes no claim that Mesa is in any way a compatible replacement for OpenGL or associated with Silicon Graphics, Inc. Those who want a licensed implementation of OpenGL should contact a licensed vendor. While Mesa is not a licensed OpenGL implementation, it is currently being tested with the OpenGL conformance tests. For the current conformance status see the CONFORM file included in the Mesa distribution."
 PKG_AUTORECONF="yes"
+PKG_USE_MESON="no"
 
 if [ "$DISPLAYSERVER" = "x11" ]; then
-  PKG_DEPENDS_TARGET="toolchain Python2:host expat glproto dri2proto presentproto libdrm libXext libXdamage libXfixes libXxf86vm libxcb libX11 systemd dri3proto libxshmfence openssl"
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET glproto dri2proto presentproto libXext libXdamage libXfixes libXxf86vm libxcb libX11 systemd dri3proto libxshmfence openssl"
 
   export DRI_DRIVER_INSTALL_DIR=$XORG_PATH_DRI
   export DRI_DRIVER_SEARCH_DIR=$XORG_PATH_DRI
@@ -38,7 +41,6 @@ if [ "$DISPLAYSERVER" = "x11" ]; then
   MESA_GLX="--enable-glx --enable-driglx-direct --enable-glx-tls"
   MESA_PLATFORMS="--with-platforms=x11,drm"
 else
-  PKG_DEPENDS_TARGET="toolchain Python2:host expat libdrm"
   MESA_DRI="--enable-dri --disable-dri3"
   # The glx in glx-tls is a misnomer - there's nothing glx in it.
   MESA_GLX="--disable-glx --disable-driglx-direct --enable-glx-tls"
@@ -65,9 +67,9 @@ fi
 
 if [ "$VAAPI_SUPPORT" = "yes" -a "$GALLIUM_DRIVERS" != "" ]; then
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET libva"
-  MESA_VAAPI="--enable-vaapi"
+  MESA_VAAPI="--enable-va"
 else
-  MESA_VAAPI="--disable-vaapi"
+  MESA_VAAPI="--disable-va"
 fi
 
 XA_CONFIG="--disable-xa"
@@ -104,7 +106,7 @@ PKG_CONFIGURE_OPTS_TARGET="CC_FOR_BUILD=$HOST_CC \
                            --disable-nine \
                            --disable-xvmc \
                            $MESA_VDPAU \
-                           --disable-omx \
+                           --disable-omx-bellagio \
                            $MESA_VAAPI \
                            --disable-opencl \
                            --enable-opencl-icd \
@@ -118,6 +120,10 @@ PKG_CONFIGURE_OPTS_TARGET="CC_FOR_BUILD=$HOST_CC \
                            --with-dri-drivers=$DRI_DRIVERS \
                            --with-vulkan-drivers=no \
                            --with-sysroot=$SYSROOT_PREFIX"
+
+pre_configure_target() {
+  export LIBS="-lLLVM"
+}
 
 post_makeinstall_target() {
   # Similar hack is needed on EGL, GLES* front. Might as well drop it and test the GLVND?

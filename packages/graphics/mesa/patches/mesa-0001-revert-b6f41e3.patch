@@ -1,0 +1,24 @@
+diff -Naur a/src/gallium/state_trackers/va/context.c b/src/gallium/state_trackers/va/context.c
+--- a/src/gallium/state_trackers/va/context.c	2017-10-31 11:00:11.000000000 -0700
++++ b/src/gallium/state_trackers/va/context.c	2017-10-31 12:31:26.269621086 -0700
+@@ -89,7 +89,7 @@
+    &vlVaQuerySurfaceAttributes,
+    &vlVaAcquireBufferHandle,
+    &vlVaReleaseBufferHandle,
+-#if 0
++#if VA_CHECK_VERSION(1, 0, 0)
+    &vlVaExportSurfaceHandle,
+ #endif
+ };
+diff -Naur a/src/gallium/state_trackers/va/surface.c b/src/gallium/state_trackers/va/surface.c
+--- a/src/gallium/state_trackers/va/surface.c	2017-10-31 11:00:11.000000000 -0700
++++ b/src/gallium/state_trackers/va/surface.c	2017-10-31 12:31:07.567486837 -0700
+@@ -923,7 +923,7 @@
+    return VA_STATUS_SUCCESS;
+ }
+ 
+-#if 0
++#if VA_CHECK_VERSION(1, 0, 0)
+ VAStatus
+ vlVaExportSurfaceHandle(VADriverContextP ctx,
+                         VASurfaceID surface_id,
