@@ -32,7 +32,7 @@ PKG_LONGDESC="The Device Tree Compiler"
 PKG_AUTORECONF="no"
 
 PKG_MAKE_OPTS_HOST="dtc libfdt"
-PKG_MAKE_OPTS_TARGET="dtc libfdt"
+PKG_MAKE_OPTS_TARGET="dtc"
 
 makeinstall_host() {
   mkdir -p $TOOLCHAIN/bin
