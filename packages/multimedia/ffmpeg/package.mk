@@ -35,6 +35,13 @@ PKG_BUILD_FLAGS="-gold -lto"
 # Dependencies
 get_graphicdrivers
 
+if [ "$V4L2_SUPPORT" = "yes" ]; then
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET v4l-utils libdrm"
+  FFMPEG_V4L2="--enable-v4l2_m2m --enable-libv4l2 --enable-libdrm"
+else
+  FFMPEG_V4L2="--disable-v4l2_m2m --disable-libv4l2 --disable-libdrm"
+fi
+
 if [ "$VAAPI_SUPPORT" = "yes" ]; then
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET libva"
   PKG_FFMPEG_VAAPI="--enable-vaapi"
@@ -154,6 +161,7 @@ configure_target() {
               --enable-mdct \
               --enable-rdft \
               --disable-crystalhd \
+              $FFMPEG_V4L2 \
               $PKG_FFMPEG_VAAPI \
               $PKG_FFMPEG_VDPAU \
               $PKG_FFMPEG_RPI \
@@ -161,14 +169,14 @@ configure_target() {
               --disable-dxva2 \
               --enable-runtime-cpudetect \
               $PKG_FFMPEG_TABLES \
-              --disable-encoders \
+              --enable-encoders \
               --enable-encoder=ac3 \
               --enable-encoder=aac \
               --enable-encoder=wmav2 \
               --enable-encoder=mjpeg \
               --enable-encoder=png \
               --enable-hwaccels \
-              --disable-muxers \
+              --enable-muxers \
               --enable-muxer=spdif \
               --enable-muxer=adts \
               --enable-muxer=asf \
@@ -178,8 +186,8 @@ configure_target() {
               --enable-parsers \
               --enable-bsfs \
               --enable-protocol=http \
-              --disable-indevs \
-              --disable-outdevs \
+              --enable-indevs \
+              --enable-outdevs \
               --enable-filters \
               --disable-avisynth \
               --enable-bzlib \
