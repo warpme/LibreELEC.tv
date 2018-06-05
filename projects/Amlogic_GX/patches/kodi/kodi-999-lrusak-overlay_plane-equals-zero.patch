@@ -1,0 +1,11 @@
+--- a/xbmc/windowing/gbm/DRMUtils.cpp	2018-06-02 06:22:13.924624362 +0100
++++ b/xbmc/windowing/gbm/DRMUtils.cpp	2018-06-02 06:44:57.259958112 +0100
+@@ -430,7 +430,7 @@ bool CDRMUtils::GetPlanes()
+ 
+   CLog::Log(LOGDEBUG, "CDRMUtils::%s - primary plane format: %c%c%c%c", __FUNCTION__, fourcc, fourcc >> 8, fourcc >> 16, fourcc >> 24);
+ 
+-  if (overlay_plane_id != 0)
++  if (overlay_plane_id == 0)
+   {
+     // overlay plane
+     m_overlay_plane->plane = drmModeGetPlane(m_fd, overlay_plane_id);
