@@ -1,0 +1,48 @@
+From 24e46d8a7e98ba193ff2d7dbabb5f1c7ed94edbb Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Tue, 13 Feb 2018 23:26:32 +0100
+Subject: [PATCH] Enable GLES Error debugging
+
+---
+ xbmc/utils/GLUtils.cpp | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/xbmc/utils/GLUtils.cpp b/xbmc/utils/GLUtils.cpp
+index 8d00ae7ddb8c..739abda85c42 100644
+--- a/xbmc/utils/GLUtils.cpp
++++ b/xbmc/utils/GLUtils.cpp
+@@ -24,6 +24,19 @@
+ #include "settings/AdvancedSettings.h"
+ #include "rendering/RenderSystem.h"
+ 
++static const char * glStrError(GLenum error)
++{
++  switch (error) {
++  // TODO
++  case GL_INVALID_ENUM:
++    return "GL_INVALID_ENUM";
++  case GL_INVALID_OPERATION:
++    return "GL_INVALID_OPERATION";
++  default:
++    return "UNKNOWN";
++  }
++}
++
+ void _VerifyGLState(const char* szfile, const char* szfunction, int lineno){
+ #if defined(HAS_GL) && defined(_DEBUG)
+ #define printMatrix(matrix)                                             \
+@@ -58,6 +71,14 @@ void _VerifyGLState(const char* szfile, const char* szfunction, int lineno){
+   CLog::Log(LOGDEBUG, "Modelview Matrix:");
+   printMatrix(matrix);
+ //  abort();
++#elif defined(HAS_GLES)
++  GLenum err = glGetError();
++  if (err==GL_NO_ERROR)
++    return;
++  if (szfile && szfunction)
++    CLog::Log(LOGERROR, "GLES ERROR %s at: file:%s function:%s line:%d", glStrError(err), szfile, szfunction, lineno);
++  else
++    CLog::Log(LOGERROR, "GLES ERROR %s ", glStrError(err));
+ #endif
+ }
+ 

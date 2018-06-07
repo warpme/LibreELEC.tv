@@ -1,0 +1,45 @@
+From 9de1a71efac8db0d3c9fde530636c5be6e05d301 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Tue, 5 Jun 2018 22:06:06 -0700
+Subject: [PATCH] CEGLImage: remove modifiers for now
+
+---
+ xbmc/utils/EGLUtils.cpp | 18 ------------------
+ 1 file changed, 18 deletions(-)
+
+diff --git a/xbmc/utils/EGLUtils.cpp b/xbmc/utils/EGLUtils.cpp
+index 14ed44c496a1..6ebda25571c9 100644
+--- a/xbmc/utils/EGLUtils.cpp
++++ b/xbmc/utils/EGLUtils.cpp
+@@ -301,20 +301,6 @@ namespace
+     EGL_DMA_BUF_PLANE1_PITCH_EXT,
+     EGL_DMA_BUF_PLANE2_PITCH_EXT,
+   };
+-
+-  const EGLint eglDmabufPlaneModifierLoAttr[CEGLImage::MAX_NUM_PLANES] =
+-  {
+-    EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT,
+-    EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT,
+-    EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT,
+-  };
+-
+-  const EGLint eglDmabufPlaneModifierHiAttr[CEGLImage::MAX_NUM_PLANES] =
+-  {
+-    EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT,
+-    EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT,
+-    EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT,
+-  };
+ } // namespace
+ 
+ CEGLImage::CEGLImage(EGLDisplay display) :
+@@ -345,10 +331,6 @@ bool CEGLImage::CreateImage(EglAttrs imageAttrs)
+       attribs.Add({{eglDmabufPlaneFdAttr[i], imageAttrs.planes[i].fd},
+                    {eglDmabufPlaneOffsetAttr[i], imageAttrs.planes[i].offset},
+                    {eglDmabufPlanePitchAttr[i], imageAttrs.planes[i].pitch}});
+-
+-      if (imageAttrs.planes[i].modifier != DRM_FORMAT_MOD_INVALID)
+-        attribs.Add({{eglDmabufPlaneModifierLoAttr[i], static_cast<EGLint>(imageAttrs.planes[i].modifier & 0xFFFFFFFF)},
+-                     {eglDmabufPlaneModifierHiAttr[i], static_cast<EGLint>(imageAttrs.planes[i].modifier >> 32)}});
+     }
+   }
+ 

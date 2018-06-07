@@ -1,0 +1,22 @@
+From 5eb5dffcacefe8534c7133fa4e4e6abca6fbd72c Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Tue, 5 Jun 2018 22:03:22 -0700
+Subject: [PATCH] fixup! utils/EGLUtils: add class CEGLImage
+
+---
+ xbmc/utils/EGLUtils.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/utils/EGLUtils.h b/xbmc/utils/EGLUtils.h
+index 73caf93ad6b5..4784b900371d 100644
+--- a/xbmc/utils/EGLUtils.h
++++ b/xbmc/utils/EGLUtils.h
+@@ -182,7 +182,7 @@ class CEGLImage
+ 
+ private:
+   EGLDisplay m_display{nullptr};
+-  EGLImage m_image{nullptr};
++  EGLImageKHR m_image{nullptr};
+ 
+   PFNEGLCREATEIMAGEKHRPROC m_eglCreateImageKHR{nullptr};
+   PFNEGLDESTROYIMAGEKHRPROC m_eglDestroyImageKHR{nullptr};

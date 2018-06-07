@@ -1,0 +1,521 @@
+From 12a4853902d0d47b74b74925f9ce1f9c2d55c8f8 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Mon, 27 Nov 2017 20:43:11 -0800
+Subject: [PATCH] add RendererDRMPRIMEGLES
+
+---
+ .../VideoRenderers/HwDecRender/CMakeLists.txt      |   8 +-
+ .../VideoRenderers/HwDecRender/DRMPRIMEEGL.cpp     |  99 +++++++++
+ .../VideoRenderers/HwDecRender/DRMPRIMEEGL.h       |  50 +++++
+ .../HwDecRender/RendererDRMPRIMEGLES.cpp           | 223 +++++++++++++++++++++
+ .../HwDecRender/RendererDRMPRIMEGLES.h             |  55 +++++
+ .../VideoPlayer/VideoRenderers/LinuxRendererGLES.h |   1 +
+ xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp     |   2 +
+ 7 files changed, 436 insertions(+), 2 deletions(-)
+ create mode 100644 xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.cpp
+ create mode 100644 xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.h
+ create mode 100644 xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
+ create mode 100644 xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.h
+
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/CMakeLists.txt b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/CMakeLists.txt
+index d9f5fa8373f3..a85903e56d00 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/CMakeLists.txt
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/CMakeLists.txt
+@@ -50,8 +50,12 @@ if(CORE_SYSTEM_NAME STREQUAL android)
+ endif()
+ 
+ if(CORE_PLATFORM_NAME_LC STREQUAL gbm)
+-  list(APPEND SOURCES RendererDRMPRIME.cpp)
+-  list(APPEND HEADERS RendererDRMPRIME.h)
++  list(APPEND SOURCES RendererDRMPRIME.cpp
++                      RendererDRMPRIMEGLES.cpp
++                      DRMPRIMEEGL.cpp)
++  list(APPEND HEADERS RendererDRMPRIME.h
++                      RendererDRMPRIMEGLES.h
++                      DRMPRIMEEGL.h)
+ endif()
+ 
+ # we might want to build on linux systems
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.cpp
+new file mode 100644
+index 000000000000..ab816107a13f
+--- /dev/null
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.cpp
+@@ -0,0 +1,99 @@
++/*
++ *      Copyright (C) 2007-2017 Team XBMC
++ *      http://xbmc.org
++ *
++ *  This Program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2, or (at your option)
++ *  any later version.
++ *
++ *  This Program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with XBMC; see the file COPYING.  If not, see
++ *  <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#include "DRMPRIMEEGL.h"
++
++#include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h"
++#include "utils/log.h"
++#include "windowing/gbm/DRMUtils.h"
++
++#include <drm_fourcc.h>
++
++extern "C" {
++#include "libavutil/frame.h"
++#include "libavutil/hwcontext_drm.h"
++}
++
++void CDRMPRIMETexture::Init(EGLDisplay eglDisplay)
++{
++  m_eglImage.reset(new CEGLImage(eglDisplay));
++}
++
++bool CDRMPRIMETexture::Map(CVideoBufferDRMPRIME *buffer)
++{
++  if (m_primebuffer)
++    return true;
++
++  m_texWidth = buffer->GetWidth();
++  m_texHeight = buffer->GetHeight();
++
++  AVDRMFrameDescriptor* descriptor = buffer->GetDescriptor();
++  if (descriptor && descriptor->nb_layers)
++  {
++    AVDRMLayerDescriptor* layer = &descriptor->layers[0];
++
++    std::array<CEGLImage::EglPlane, CEGLImage::MAX_NUM_PLANES> planes;
++
++    for (int i = 0; i < layer->nb_planes; i++)
++    {
++      planes[i].fd = descriptor->objects[layer->planes[i].object_index].fd;
++      planes[i].offset = layer->planes[i].offset;
++      planes[i].pitch = layer->planes[i].pitch;
++      planes[i].modifier = DRM_FORMAT_MOD_INVALID;
++    }
++
++    CEGLImage::EglAttrs attribs;
++
++    attribs.width = m_texWidth;
++    attribs.height = m_texHeight;
++    attribs.format = layer->format;
++    attribs.planes = planes;
++
++    if (!m_eglImage->CreateImage(attribs))
++      return false;
++
++    glGenTextures(1, &m_texture);
++    glBindTexture(m_textureTarget, m_texture);
++    glTexParameteri(m_textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++    glTexParameteri(m_textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++    glTexParameteri(m_textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(m_textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++    m_eglImage->UploadImage(m_textureTarget);
++    glBindTexture(m_textureTarget, 0);
++  }
++
++  m_primebuffer = buffer;
++  m_primebuffer->Acquire();
++
++  return true;
++}
++
++void CDRMPRIMETexture::Unmap()
++{
++  if (!m_primebuffer)
++    return;
++
++  m_eglImage->DestroyImage();
++
++  glDeleteTextures(1, &m_texture);
++
++  m_primebuffer->Release();
++  m_primebuffer = nullptr;
++}
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.h b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.h
+new file mode 100644
+index 000000000000..60595a308523
+--- /dev/null
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.h
+@@ -0,0 +1,50 @@
++/*
++ *      Copyright (C) 2007-2017 Team XBMC
++ *      http://xbmc.org
++ *
++ *  This Program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2, or (at your option)
++ *  any later version.
++ *
++ *  This Program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with XBMC; see the file COPYING.  If not, see
++ *  <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#pragma once
++
++#include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h"
++
++#define GL_GLEXT_PROTOTYPES
++#include <GLES2/gl2.h>
++#include <GLES2/gl2ext.h>
++
++#include "utils/EGLUtils.h"
++
++class CDRMPRIMETexture
++{
++public:
++  bool Map(CVideoBufferDRMPRIME *buffer);
++  void Unmap();
++  void Init(EGLDisplay eglDisplay);
++
++  GLuint GetTexture() { return m_texture; }
++  CSizeInt GetTextureSize() { return { m_texWidth, m_texHeight }; }
++
++protected:
++  CVideoBufferDRMPRIME *m_primebuffer{nullptr};
++  std::unique_ptr<CEGLImage> m_eglImage;
++
++  GLenum m_textureTarget{GL_TEXTURE_EXTERNAL_OES};
++  GLuint m_texture{0};
++  int m_texWidth{0};
++  int m_texHeight{0};
++};
++
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
+new file mode 100644
+index 000000000000..78f794279f1c
+--- /dev/null
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
+@@ -0,0 +1,223 @@
++/*
++ *      Copyright (C) 2007-2015 Team XBMC
++ *      http://xbmc.org
++ *
++ *  This Program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2, or (at your option)
++ *  any later version.
++ *
++ *  This Program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with XBMC; see the file COPYING.  If not, see
++ *  <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#include "RendererDRMPRIMEGLES.h"
++
++#include "cores/VideoPlayer/DVDCodecs/DVDCodecUtils.h"
++#include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h"
++#include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
++#include "ServiceBroker.h"
++#include "settings/Settings.h"
++#include "settings/AdvancedSettings.h"
++#include "utils/GLUtils.h"
++#include "utils/log.h"
++
++#define BUFFER_OFFSET(i) ((char *)NULL + (i))
++
++static CWinSystemGbmGLESContext *m_pWinSystem{nullptr};
++
++CRendererDRMPRIMEGLES::~CRendererDRMPRIMEGLES()
++{
++  for (int i = 0; i < NUM_BUFFERS; ++i)
++    DeleteTexture(i);
++}
++
++CBaseRenderer* CRendererDRMPRIMEGLES::Create(CVideoBuffer* buffer)
++{
++  if (buffer && dynamic_cast<CVideoBufferDRMPRIME*>(buffer))
++    return new CRendererDRMPRIMEGLES();
++
++  return nullptr;
++}
++
++bool CRendererDRMPRIMEGLES::Register(CWinSystemGbmGLESContext *winSystem)
++{
++  VIDEOPLAYER::CRendererFactory::RegisterRenderer("drm_prime_gles", CRendererDRMPRIMEGLES::Create);
++  m_pWinSystem = winSystem;
++
++  return true;
++}
++
++bool CRendererDRMPRIMEGLES::Configure(const VideoPicture &picture, float fps, unsigned int orientation)
++{
++  for (auto &texture : m_DRMPRIMETextures)
++    texture.Init(m_pWinSystem->GetEGLDisplay());
++
++  return CLinuxRendererGLES::Configure(picture, fps, orientation);
++}
++
++void CRendererDRMPRIMEGLES::ReleaseBuffer(int index)
++{
++  m_DRMPRIMETextures[index].Unmap();
++  CLinuxRendererGLES::ReleaseBuffer(index);
++}
++
++void CRendererDRMPRIMEGLES::AddVideoPicture(const VideoPicture& picture, int index, double currentClock)
++{
++  YUVBUFFER &buf = m_buffers[index];
++  if (buf.videoBuffer)
++    buf.videoBuffer->Release();
++  buf.videoBuffer = picture.videoBuffer;
++  buf.videoBuffer->Acquire();
++}
++
++CRenderInfo CRendererDRMPRIMEGLES::GetRenderInfo()
++{
++  CRenderInfo info;
++  info.max_buffer_size = m_numRenderBuffers;
++  info.optimal_buffer_size = m_numRenderBuffers;
++  info.opaque_pointer = (void*)this;
++  return info;
++}
++
++bool CRendererDRMPRIMEGLES::CreateTexture(int index)
++{
++  YUVBUFFER &buf = m_buffers[index];
++  YuvImage &im = buf.image;
++  YUVPLANE &plane = buf.fields[0][0];
++
++  DeleteTexture(index);
++
++  memset(&im, 0, sizeof(im));
++  memset(&plane, 0, sizeof(YUVPLANE));
++  im.height = m_sourceHeight;
++  im.width  = m_sourceWidth;
++  im.cshift_x = 1;
++  im.cshift_y = 1;
++
++  plane.id = 1;
++
++  return true;
++}
++
++void CRendererDRMPRIMEGLES::DeleteTexture(int index)
++{
++  ReleaseBuffer(index);
++
++  YUVBUFFER &buf = m_buffers[index];
++  buf.fields[0][0].id = 0;
++}
++
++bool CRendererDRMPRIMEGLES::UploadTexture(int index)
++{
++  YUVBUFFER &buf = m_buffers[index];
++
++  CVideoBufferDRMPRIME *buffer = dynamic_cast<CVideoBufferDRMPRIME*>(buf.videoBuffer);
++
++  if (!buffer)
++  {
++    CLog::Log(LOGNOTICE, "CRendererDRMPRIMEGLES::%s - no buffer", __FUNCTION__);
++    return false;
++  }
++
++  m_DRMPRIMETextures[index].Map(buffer);
++
++  YUVPLANE &plane = buf.fields[0][0];
++
++  auto size = m_DRMPRIMETextures[index].GetTextureSize();
++  plane.texwidth  = size.Width();
++  plane.texheight = size.Height();
++  plane.pixpertex_x = 1;
++  plane.pixpertex_y = 1;
++
++  plane.id = m_DRMPRIMETextures[index].GetTexture();
++
++  CalculateTextureSourceRects(index, 1);
++
++  return true;
++}
++
++bool CRendererDRMPRIMEGLES::LoadShadersHook()
++{
++  CLog::Log(LOGNOTICE, "Using DRMPRIMEGLES render method");
++  m_textureTarget = GL_TEXTURE_2D;
++  m_renderMethod = RENDER_DRMPRIME;
++  return true;
++}
++
++bool CRendererDRMPRIMEGLES::RenderHook(int index)
++{
++  YUVPLANE &plane = m_buffers[index].fields[0][0];
++
++  glDisable(GL_DEPTH_TEST);
++
++  glActiveTexture(GL_TEXTURE0);
++  glBindTexture(GL_TEXTURE_EXTERNAL_OES, plane.id);
++
++  CRenderSystemGLES *renderSystem = dynamic_cast<CRenderSystemGLES*>(CServiceBroker::GetRenderSystem());
++
++  renderSystem->EnableGUIShader(SM_TEXTURE_RGBA_OES);
++
++  GLubyte idx[4] = {0, 1, 3, 2}; // Determines order of triangle strip
++  GLuint vertexVBO;
++  GLuint indexVBO;
++  struct PackedVertex
++  {
++    float x, y, z;
++    float u1, v1;
++  } vertex[4];
++
++  GLint vertLoc = renderSystem->GUIShaderGetPos();
++  GLint loc = renderSystem->GUIShaderGetCoord0();
++
++  for (unsigned int i = 0; i < 4; i++)
++  {
++    // Setup vertex position values
++    vertex[i].x = m_rotatedDestCoords[i].x;
++    vertex[i].y = m_rotatedDestCoords[i].y;
++    vertex[i].z = 0.0f;
++  }
++
++  // Setup texture coordinates
++  vertex[0].u1 = vertex[3].u1 = plane.rect.x1;
++  vertex[0].v1 = vertex[1].v1 = plane.rect.y1;
++  vertex[1].u1 = vertex[2].u1 = plane.rect.x2;
++  vertex[2].v1 = vertex[3].v1 = plane.rect.y2;
++
++  glGenBuffers(1, &vertexVBO);
++  glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
++  glBufferData(GL_ARRAY_BUFFER, sizeof(PackedVertex)*4, &vertex[0], GL_STATIC_DRAW);
++
++  glVertexAttribPointer(vertLoc, 3, GL_FLOAT, 0, sizeof(PackedVertex), BUFFER_OFFSET(offsetof(PackedVertex, x)));
++  glVertexAttribPointer(loc, 2, GL_FLOAT, 0, sizeof(PackedVertex), BUFFER_OFFSET(offsetof(PackedVertex, u1)));
++
++  glEnableVertexAttribArray(vertLoc);
++  glEnableVertexAttribArray(loc);
++
++  glGenBuffers(1, &indexVBO);
++  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
++  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLubyte)*4, idx, GL_STATIC_DRAW);
++
++  glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_BYTE, 0);
++
++  glDisableVertexAttribArray(vertLoc);
++  glDisableVertexAttribArray(loc);
++
++  glBindBuffer(GL_ARRAY_BUFFER, 0);
++  glDeleteBuffers(1, &vertexVBO);
++  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++  glDeleteBuffers(1, &indexVBO);
++
++  renderSystem->DisableGUIShader();
++
++  glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
++
++  return true;
++}
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.h b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.h
+new file mode 100644
+index 000000000000..018810844c59
+--- /dev/null
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.h
+@@ -0,0 +1,55 @@
++/*
++ *      Copyright (C) 2007-2015 Team XBMC
++ *      http://xbmc.org
++ *
++ *  This Program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2, or (at your option)
++ *  any later version.
++ *
++ *  This Program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with XBMC; see the file COPYING.  If not, see
++ *  <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#pragma once
++
++#include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
++#include "DRMPRIMEEGL.h"
++#include "windowing/gbm/WinSystemGbmGLESContext.h"
++
++class CRendererDRMPRIMEGLES : public CLinuxRendererGLES
++{
++public:
++  CRendererDRMPRIMEGLES() = default;
++  ~CRendererDRMPRIMEGLES();
++
++  // Registration
++  static CBaseRenderer* Create(CVideoBuffer* buffer);
++  static bool Register(CWinSystemGbmGLESContext *winSystem);
++
++  // CLinuxRendererGLES overrides
++  bool Configure(const VideoPicture &picture, float fps, unsigned int orientation) override;
++  void ReleaseBuffer(int index) override;
++  void AddVideoPicture(const VideoPicture& picture, int index, double currentClock);
++
++  // Feature support
++  CRenderInfo GetRenderInfo() override;
++
++protected:
++  // CLinuxRendererGLES overrides
++  bool LoadShadersHook() override;
++  bool RenderHook(int index) override;
++  bool UploadTexture(int index) override;
++  void DeleteTexture(int index) override;
++  bool CreateTexture(int index) override;
++
++  static const int m_numRenderBuffers = 4;
++  CDRMPRIMETexture m_DRMPRIMETextures[NUM_BUFFERS];
++};
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h
+index 5da862f99c4e..7573fbff8086 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h
+@@ -69,6 +69,7 @@ enum RenderMethod
+   RENDER_POT    = 0x010,
+   RENDER_OMXEGL = 0x040,
+   RENDER_CVREF  = 0x080,
++  RENDER_DRMPRIME = 0x100,
+   RENDER_MEDIACODEC = 0x400,
+   RENDER_MEDIACODECSURFACE = 0x800,
+ };
+diff --git a/xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp b/xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp
+index c61afa336ae5..d36ed38c71f6 100644
+--- a/xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp
++++ b/xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp
+@@ -20,6 +20,7 @@
+ 
+ #include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h"
+ #include "cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIME.h"
++#include "cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.h"
+ 
+ #include "cores/RetroPlayer/process/gbm/RPProcessInfoGbm.h"
+ #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGLES.h"
+@@ -67,6 +68,7 @@ bool CWinSystemGbmGLESContext::InitWindowSystem()
+     GBM::VAAPIRegister(m_vaapiProxy.get(), deepColor);
+   }
+ 
++  CRendererDRMPRIMEGLES::Register(this);
+   CRendererDRMPRIME::Register(this);
+   CDVDVideoCodecDRMPRIME::Register();
+ 
