@@ -35,13 +35,13 @@ fi
 
 # update device tree
   if [ -f $SYSTEM_ROOT/usr/share/bootloader/dtb.img ]; then
-    echo -n "Updating dtb.img"
+    echo "Updating dtb.img"
     cp -p $SYSTEM_ROOT/usr/share/bootloader/dtb.img $BOOT_ROOT
   fi
 
 # update aml_autoscript
   if [ -f $SYSTEM_ROOT/usr/share/bootloader/aml_autoscript ]; then
-    echo -n "Updating aml_autoscript"
+    echo "Updating aml_autoscript"
     cp -p $SYSTEM_ROOT/usr/share/bootloader/aml_autoscript $BOOT_ROOT
   fi
 
