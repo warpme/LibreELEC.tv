@@ -1,0 +1,16 @@
+diff -Naur a/configure.ac b/configure.ac
+--- a/configure.ac	2018-08-17 06:17:56.000000000 -0700
++++ b/configure.ac	2018-08-27 14:39:03.830983304 -0700
+@@ -143,9 +143,9 @@
+ dnl Checks for libraries.
+ AX_PTHREAD()
+ 
+-PKG_CHECK_MODULES([X11], [x11])
+-PKG_CHECK_MODULES([XEXT], [xext])
+-PKG_CHECK_MODULES([GLPROTO], [glproto])
++#PKG_CHECK_MODULES([X11], [x11])
++#PKG_CHECK_MODULES([XEXT], [xext])
++#PKG_CHECK_MODULES([GLPROTO], [glproto])
+ 
+ dnl Checks for typedefs, structures, and compiler characteristics.
+ AC_C_TYPEOF
