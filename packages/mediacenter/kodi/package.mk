@@ -346,13 +346,13 @@ post_makeinstall_target() {
 }
 
 post_install() {
-  enable_service kodi.target
   enable_service kodi-autostart.service
   enable_service kodi-cleanlogs.service
   enable_service kodi-halt.service
   enable_service kodi-poweroff.service
   enable_service kodi-reboot.service
   enable_service kodi-waitonnetwork.service
-  enable_service kodi.service
   enable_service kodi-lirc-suspend.service
+
+  enable_service kodi.service graphical.target
 }

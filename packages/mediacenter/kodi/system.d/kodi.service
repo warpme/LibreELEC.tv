@@ -1,8 +1,10 @@
 [Unit]
 Description=Kodi Media Center
-After=network-online.target graphical.target
-Requires=graphical.target
+After=network-online.target
 Wants=network-online.target
+
+Conflicts=getty@tty1.service
+After=getty@tty1.service
 
 [Service]
 Environment=__GL_YIELD=USLEEP
@@ -25,4 +27,4 @@ StartLimitInterval=0
 LimitNOFILE=16384
 
 [Install]
-WantedBy=kodi.target
+Alias=display-manager.service
