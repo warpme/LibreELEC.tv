@@ -130,15 +130,8 @@ post_makeinstall_target() {
   # remove debug-shell.service, we install our own
   safe_remove $INSTALL/usr/lib/systemd/system/debug-shell.service
 
-  # remove getty units, we dont want a console
-  safe_remove $INSTALL/usr/lib/systemd/system/autovt@.service
-  safe_remove $INSTALL/usr/lib/systemd/system/console-getty.service
-  safe_remove $INSTALL/usr/lib/systemd/system/console-shell.service
+  # remove container getty units, we dont want a systemd-nspawn
   safe_remove $INSTALL/usr/lib/systemd/system/container-getty@.service
-  safe_remove $INSTALL/usr/lib/systemd/system/getty.target
-  safe_remove $INSTALL/usr/lib/systemd/system/getty@.service
-  safe_remove $INSTALL/usr/lib/systemd/system/serial-getty@.service
-  safe_remove $INSTALL/usr/lib/systemd/system/*.target.wants/getty.target
 
   # remove other notused or nonsense stuff (our /etc is ro)
   safe_remove $INSTALL/usr/lib/systemd/systemd-update-done
@@ -258,4 +251,7 @@ post_install() {
   enable_service usercache.service
   enable_service kernel-overlays.service
   enable_service hwdb.service
+
+  mkdir -p $INSTALL/usr/lib/systemd/system/getty.target.wants
+  ln -s /usr/lib/systemd/system/getty@.service $INSTALL/usr/lib/systemd/system/getty.target.wants/getty@tty1.service
 }
