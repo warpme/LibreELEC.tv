@@ -9,4 +9,4 @@ ExecStart=/bin/sh /storage/.kodi/addons/service.system.tinc/bin/tinc.start
 Restart=on-failure
 
 [Install]
-WantedBy=kodi.target
+WantedBy=graphical.target

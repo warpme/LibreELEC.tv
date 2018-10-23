@@ -9,4 +9,4 @@ ExecStart=/bin/sh /storage/.kodi/addons/service.system.inadyn/bin/inadyn-service
 Restart=on-failure
 
 [Install]
-WantedBy=kodi.target
+WantedBy=graphical.target

@@ -9,5 +9,5 @@ ExecStart=/bin/sh /storage/.kodi/addons/service.emby/bin/emby.start
 Restart=always
 
 [Install]
-WantedBy=kodi.target
+WantedBy=graphical.target
 

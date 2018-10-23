@@ -10,7 +10,7 @@ Restart=always
 RestartSec=15
 
 [Install]
-WantedBy=kodi.target
+WantedBy=graphical.target
 
 # NOTES:
 #

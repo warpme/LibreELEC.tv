@@ -1,7 +1,7 @@
 [Unit]
 Description=Touchscreen support daemon
 After=graphical.target
-Before=kodi.target
+Before=graphical.target
 
 [Service]
 Type=oneshot
@@ -11,4 +11,4 @@ ExecStart=-/bin/sh -c    "exec /bin/sh /storage/.kodi/addons/service.touchscreen
 RemainAfterExit=yes
 
 [Install]
-WantedBy=kodi.target
+WantedBy=graphical.target

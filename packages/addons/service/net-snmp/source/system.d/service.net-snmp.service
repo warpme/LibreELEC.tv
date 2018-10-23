@@ -11,4 +11,4 @@ ExecReload=/bin/kill -HUP $MAINPID
 PIDFile=/var/run/snmpd.pid
 
 [Install]
-WantedBy=kodi.target
+WantedBy=graphical.target

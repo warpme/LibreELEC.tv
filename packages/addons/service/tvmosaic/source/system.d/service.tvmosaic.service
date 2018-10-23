@@ -10,4 +10,4 @@ Type=forking
 Restart=always
 
 [Install]
-WantedBy=kodi.target
+WantedBy=graphical.target

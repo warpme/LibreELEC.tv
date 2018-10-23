@@ -12,5 +12,5 @@ StandardOutput=null
 Restart=on-failure
 
 [Install]
-WantedBy=kodi.target
+WantedBy=graphical.target
 Alias=syslog.service

@@ -8,4 +8,4 @@ ExecStart=/bin/sh /storage/.kodi/addons/service.snapserver/bin/snapserver.start
 Restart=always
 
 [Install]
-WantedBy=kodi.target
+WantedBy=graphical.target

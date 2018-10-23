@@ -10,4 +10,4 @@ ExecStopPost=/usr/bin/pactl suspend-sink "$LS_SINK" 1
 Restart=on-failure
 
 [Install]
-WantedBy=kodi.service
+WantedBy=graphical.target
