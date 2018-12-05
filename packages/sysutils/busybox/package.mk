@@ -70,13 +70,6 @@ configure_target() {
     # set install dir
     sed -i -e "s|^CONFIG_PREFIX=.*$|CONFIG_PREFIX=\"$INSTALL/usr\"|" .config
 
-    if [ ! "$CRON_SUPPORT" = "yes" ] ; then
-      sed -i -e "s|^CONFIG_CROND=.*$|# CONFIG_CROND is not set|" .config
-      sed -i -e "s|^CONFIG_FEATURE_CROND_D=.*$|# CONFIG_FEATURE_CROND_D is not set|" .config
-      sed -i -e "s|^CONFIG_CRONTAB=.*$|# CONFIG_CRONTAB is not set|" .config
-      sed -i -e "s|^CONFIG_FEATURE_CROND_SPECIAL_TIMES=.*$|# CONFIG_FEATURE_CROND_SPECIAL_TIMES is not set|" .config
-    fi
-
     if [ ! "$SAMBA_SUPPORT" = yes ]; then
       sed -i -e "s|^CONFIG_FEATURE_MOUNT_CIFS=.*$|# CONFIG_FEATURE_MOUNT_CIFS is not set|" .config
     fi
@@ -175,17 +168,6 @@ post_install() {
   enable_service var.mount
   enable_service var-log-debug.service
   enable_service fs-resize.service
-
-  # cron support
-  if [ "$CRON_SUPPORT" = "yes" ] ; then
-    mkdir -p $INSTALL/usr/lib/systemd/system
-      cp $PKG_DIR/system.d.opt/cron.service $INSTALL/usr/lib/systemd/system
-      enable_service cron.service
-    mkdir -p $INSTALL/usr/share/services
-      cp -P $PKG_DIR/default.d/*.conf $INSTALL/usr/share/services
-      cp $PKG_DIR/system.d.opt/cron-defaults.service $INSTALL/usr/lib/systemd/system
-      enable_service cron-defaults.service
-  fi
 }
 
 makeinstall_init() {
