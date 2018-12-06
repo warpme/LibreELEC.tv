@@ -17,7 +17,7 @@ if [ "$DISPLAYSERVER" = "x11" ]; then
                            --with-xkb-rules-symlink=xorg"
 
 else
-  PKG_DEPENDS_TARGET="toolchain util-macros"
+  PKG_DEPENDS_TARGET="toolchain"
   DISPLAYSERVER_XKEYBOARD=""
 fi
 
