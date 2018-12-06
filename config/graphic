@@ -82,6 +82,10 @@ get_graphicdrivers() {
     VAAPI_SUPPORT="yes"
   fi
 
+  if listcontains "$GRAPHIC_DRIVERS" "nouveau"; then
+    GALLIUM_DRIVERS="$GALLIUM_DRIVERS,nouveau"
+  fi
+
   if listcontains "$GRAPHIC_DRIVERS" "vmware"; then
     GALLIUM_DRIVERS="$GALLIUM_DRIVERS,svga"
     XORG_DRIVERS="$XORG_DRIVERS vmware"

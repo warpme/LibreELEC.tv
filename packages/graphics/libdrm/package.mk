@@ -29,6 +29,9 @@ listcontains "$GRAPHIC_DRIVERS" "(r200|r300|r600|radeonsi)" &&
 listcontains "$GRAPHIC_DRIVERS" "radeonsi" &&
   PKG_DRM_CONFIG+=" -Damdgpu=true" || PKG_DRM_CONFIG+=" -Damdgpu=false"
 
+listcontains "$GRAPHIC_DRIVERS" "nouveau" &&
+  PKG_DRM_CONFIG+=" -Dnouveau=true" || PKG_DRM_CONFIG+=" -Dnouveau=false"
+
 listcontains "$GRAPHIC_DRIVERS" "vmware" &&
   PKG_DRM_CONFIG+=" -Dvmwgfx=true" || PKG_DRM_CONFIG+=" -Dvmwgfx=false"
 
