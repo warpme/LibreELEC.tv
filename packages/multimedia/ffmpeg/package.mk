@@ -4,11 +4,11 @@
 
 PKG_NAME="ffmpeg"
 # Current branch is: release/4.0-kodi
-PKG_VERSION="4.0.3-Leia-RC5"
-PKG_SHA256="9a971662e44353c120f2ccf87655571998956e699a2dd800ec708b8b928a53c8"
+PKG_VERSION="n4.1"
+PKG_SHA256="7afb163d6974693cdad742aa1224c33683c50845c67ee5ae35506efc631ac121"
 PKG_LICENSE="LGPLv2.1+"
 PKG_SITE="https://ffmpeg.org"
-PKG_URL="https://github.com/xbmc/FFmpeg/archive/${PKG_VERSION}.tar.gz"
+PKG_URL="https://github.com/FFmpeg/FFmpeg/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain zlib bzip2 openssl speex"
 PKG_LONGDESC="FFmpeg is a complete, cross-platform solution to record, convert and stream audio and video."
 PKG_BUILD_FLAGS="-gold"
@@ -64,11 +64,6 @@ if [ "$TARGET_ARCH" = "x86_64" ]; then
   PKG_DEPENDS_TARGET+=" nasm:host"
 fi
 
-if target_has_feature "(neon|sse)"; then
-  PKG_DEPENDS_TARGET+=" dav1d"
-  PKG_FFMPEG_AV1="--enable-libdav1d"
-fi
-
 pre_configure_target() {
   cd $PKG_BUILD
   rm -rf .$TARGET_NAME
@@ -77,8 +72,6 @@ pre_configure_target() {
     CFLAGS="-I$SYSROOT_PREFIX/usr/include/interface/vcos/pthreads -I$SYSROOT_PREFIX/usr/include/interface/vmcs_host/linux $CFLAGS"
     PKG_FFMPEG_LIBS="-lbcm_host -lvcos -lvchiq_arm -lmmal -lmmal_core -lmmal_util -lvcsm"
     PKG_FFMPEG_RPI="--enable-rpi"
-  else
-    PKG_FFMPEG_RPI="--disable-rpi"
   fi
 }
 
