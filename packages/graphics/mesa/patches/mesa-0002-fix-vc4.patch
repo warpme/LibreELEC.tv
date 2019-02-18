@@ -1,0 +1,35 @@
+From 55f3a4fac350e639dbaa7cf6494a2c1f8f0ed9c2 Mon Sep 17 00:00:00 2001
+From: Eric Anholt <eric@anholt.net>
+Date: Mon, 11 Feb 2019 11:51:35 -0800
+Subject: [PATCH] vc4: Fix copy-and-paste fail in backport of NEON asm fixes.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+One of the cpu pointers wasn't marked as read-write, causing gcc to complain:
+
+../src/gallium/drivers/vc4/vc4_tiling_lt.c:181:17: error: output operand constraint lacks ‘=’
+                 __asm__ volatile (
+
+Cc: Emil Velikov <emil.l.velikov@gmail.com>
+Fixes: 813f0a82960 ("vc4: Declare the cpu pointers as being modified in NEON asm.")
+---
+ src/gallium/drivers/vc4/vc4_tiling_lt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/gallium/drivers/vc4/vc4_tiling_lt.c b/src/gallium/drivers/vc4/vc4_tiling_lt.c
+index 324a6334668..167161fdff5 100644
+--- a/src/gallium/drivers/vc4/vc4_tiling_lt.c
++++ b/src/gallium/drivers/vc4/vc4_tiling_lt.c
+@@ -194,7 +194,7 @@ vc4_store_utile(void *gpu, void *cpu, uint32_t cpu_stride, uint32_t cpp)
+                          * d0-d7.
+                          */
+                         "vstm %[gpu], {q0, q1, q2, q3}\n"
+-                        : [cpu]         "r"(cpu)
++                        : [cpu]         "+r"(cpu)
+                         : [gpu]         "r"(gpu),
+                           [cpu_stride]  "r"(cpu_stride)
+                         : "q0", "q1", "q2", "q3");
+-- 
+2.18.1
+
