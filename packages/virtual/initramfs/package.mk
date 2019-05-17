@@ -7,7 +7,7 @@ PKG_VERSION=""
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.openelec.tv"
 PKG_URL=""
-PKG_DEPENDS_TARGET="toolchain libc:init busybox:init linux:init plymouth-lite:init util-linux:init e2fsprogs:init dosfstools:init fakeroot:host"
+PKG_DEPENDS_TARGET="toolchain libc:init busybox:init linux:init plymouth-lite:init util-linux:init e2fsprogs:init dosfstools:init fakeroot:host systemd:init"
 PKG_SECTION="virtual"
 PKG_LONGDESC="debug is a Metapackage for installing initramfs"
 
@@ -31,8 +31,18 @@ post_install() {
     ln -sfn /usr/bin $BUILD/initramfs/bin
     ln -sfn /usr/sbin $BUILD/initramfs/sbin
 
+    mkdir -p $BUILD/initramfs/dev
+    mkdir -p $BUILD/initramfs/proc
+    mkdir -p $BUILD/initramfs/sys
+    mkdir -p $BUILD/initramfs/tmp
+    mkdir -p $BUILD/initramfs/var
+    mkdir -p $BUILD/initramfs/run
+    mkdir -p $BUILD/initramfs/flash
+    mkdir -p $BUILD/initramfs/sysroot
+    mkdir -p $BUILD/initramfs/storage
+
     mkdir -p $BUILD/image/
     fakeroot -- sh -c \
-      "mkdir -p dev; mknod -m 600 dev/console c 5 1; find . | cpio -H newc -ov -R 0:0 > $BUILD/image/initramfs.cpio"
+      "mknod -m 600 dev/console c 5 1; find . | cpio -H newc -ov -R 0:0 > $BUILD/image/initramfs.cpio"
   )
 }
