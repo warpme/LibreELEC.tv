@@ -1,0 +1,20 @@
+[Unit]
+Description=LibreELEC storage init
+Conflicts=shutdown.target emergency.target
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/lib/storage-init
+StandardInput=null
+StandardOutput=syslog
+StandardError=syslog+console
+KillMode=process
+RemainAfterExit=yes
+
+# Bash ignores SIGTERM, so we send SIGHUP instead, to ensure that bash
+# terminates cleanly.
+KillSignal=SIGHUP
+
+[Install]
+WantedBy=basic.target
+

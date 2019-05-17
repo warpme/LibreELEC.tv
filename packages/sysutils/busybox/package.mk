@@ -182,6 +182,7 @@ post_install() {
   enable_service var.mount
   enable_service var-log-debug.service
   enable_service fs-resize.service
+  enable_service storage-init.service
 
   # cron support
   if [ "$CRON_SUPPORT" = "yes" ] ; then
@@ -204,18 +205,25 @@ makeinstall_init() {
     touch $INSTALL/etc/fstab
     ln -sf /proc/self/mounts $INSTALL/etc/mtab
 
+  mkdir -p $INSTALL/usr/lib
+
   if find_file_path initramfs/platform_init; then
-    cp ${FOUND_PATH} $INSTALL
+    cp ${FOUND_PATH} $INSTALL/usr/lib/
     sed -e "s/@BOOT_LABEL@/$DISTRO_BOOTLABEL/g" \
         -e "s/@DISK_LABEL@/$DISTRO_DISKLABEL/g" \
-        -i $INSTALL/platform_init
-    chmod 755 $INSTALL/platform_init
+        -i $INSTALL/usr/lib/platform_init
+    chmod 755 $INSTALL/usr/lib/platform_init
   fi
 
-  cp $PKG_DIR/scripts/functions $INSTALL
-  cp $PKG_DIR/scripts/init $INSTALL
+  cp $PKG_DIR/scripts/functions $INSTALL/usr/lib/
+  cp $PKG_DIR/scripts/init $INSTALL/usr/lib/libreelec-init
   sed -e "s/@DISTRONAME@/$DISTRONAME/g" \
       -e "s/@KERNEL_NAME@/$KERNEL_NAME/g" \
-      -i $INSTALL/init
-  chmod 755 $INSTALL/init
+      -i $INSTALL/usr/lib/libreelec-init
+  chmod 755 $INSTALL/usr/lib/libreelec-init
+
+  mkdir -p $INSTALL/usr/lib/systemd/system/initrd.target.wants
+    ln -sf ../libreelec-init.service $INSTALL/usr/lib/systemd/system/initrd.target.wants/libreelec-init.service
+    cp $PKG_DIR/system.d.init/libreelec-init.service $INSTALL/usr/lib/systemd/system
+
 }

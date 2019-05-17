@@ -1,0 +1,304 @@
+#!/bin/sh
+
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2010-2011 Roman Weber (roman@openelec.tv)
+# Copyright (C) 2012 Yann Cézard (eesprit@free.fr)
+# Copyright (C) 2009-2014 Stephan Raue (stephan@openelec.tv)
+# Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
+
+# set needed variables
+MODULE_DIR=/usr/lib/modules
+
+UPDATE_ROOT=/storage/.update
+UPDATE_DIR="$UPDATE_ROOT"
+
+UPDATE_KERNEL="KERNEL"
+UPDATE_SYSTEM="SYSTEM"
+IMAGE_KERNEL="@KERNEL_NAME@"
+IMAGE_SYSTEM="SYSTEM"
+
+BOOT_STEP="start"
+MD5_FAILED="0"
+RUN_FSCK="yes"
+RUN_FSCK_DISKS=""
+SYSLINUX_DEFAULT=""
+GRUB_DEFAULT=""
+
+NBD_DEVS="0"
+FLASH_FREE_MIN="5"
+
+INSTALLED_MEMORY=$(cat /proc/meminfo | grep 'MemTotal:' | awk '{print $2}')
+SYSTEM_TORAM_LIMIT=1024000
+
+LIVE="no"
+
+BREAK_TRIPPED="no"
+
+# Get a serial number if present (eg. RPi) otherwise use MAC address from eth0
+MACHINE_UID="$(cat /proc/cpuinfo | awk '/^Serial/{s=$3; gsub ("^0*","",s); print s}')"
+[ -z "$MACHINE_UID" ] && MACHINE_UID="$(cat /sys/class/net/eth0/address 2>/dev/null | tr -d :)"
+
+# common functions
+. /usr/lib/functions
+
+# script functions
+progress() {
+  if test "$PROGRESS" = "yes"; then
+    echo "### $1 ###" >&2
+  fi
+}
+
+debug_msg() {
+  echo "$1" >&$SILENT_OUT
+}
+
+debug_shell() {
+  echo "### Starting debugging shell for boot step: $BOOT_STEP... type  exit  to quit ###"
+
+  showcursor
+
+  setsid cttyhack sh
+}
+
+error() {
+  # Display fatal error message
+  # $1:action which caused error, $2:message
+  # Send debug_shell output to stderr, in case caller is redirecting/consuming stdout
+  # Return exitcode=1 so that called may detect when an error has occurred
+  echo "*** Error in $BOOT_STEP: $1: $2 ***" >&2
+  debug_shell >&2
+  return 1
+}
+
+break_after() {
+  # Start debug shell after boot step $1, and all subsequent steps
+  if [ $BREAK_TRIPPED == yes ]; then
+    debug_shell
+  else
+    case $BREAK in
+      all|*$1*)
+        BREAK_TRIPPED=yes
+        debug_shell
+        ;;
+    esac
+  fi
+}
+
+# Mount handlers
+# All handlers take the following parameters:
+# $1:target, $2:mountpoint, $3:mount options, [$4:fs type]
+mount_common() {
+  # Common mount handler, handles block devices and filesystem images
+  MOUNT_OPTIONS="-o $3"
+  [ -n "$4" ] && MOUNT_OPTIONS="-t $4 $MOUNT_OPTIONS"
+
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+    ERR_ENV=1
+
+    mount $MOUNT_OPTIONS $1 $2 >&$SILENT_OUT 2>&1
+    [ "$?" -eq "0" ] && ERR_ENV=0 && break
+
+    usleep 1000000
+  done
+  [ "$ERR_ENV" -eq "0" ] && return 0
+  error "mount_common" "Could not mount $1"
+}
+
+get_iscsistart_options() {
+  # Convert kernel commandline ISCSI= options to iscsistart options
+  IFS_SAVE="$IFS"
+  IFS=,
+
+  for arg in $1; do
+    val="${arg#*=}"
+    case "$arg" in
+      iscsi_initiator=*)
+        option="-i"
+        ;;
+      iscsi_target_name=*)
+        option="-t"
+        ;;
+      iscsi_target_ip=*)
+        option="-a"
+        ;;
+      iscsi_target_port=*)
+        option="-p"
+        ;;
+      iscsi_target_group=*)
+        option="-g"
+        ;;
+      iscsi_username=*)
+        option="-u"
+        ;;
+      iscsi_password=*)
+        option="-w"
+        ;;
+      iscsi_in_username=*)
+        option="-U"
+        ;;
+      iscsi_in_password=*)
+        option="-W"
+        ;;
+    esac
+    echo "$option $val"
+  done
+
+  IFS="$IFS_SAVE"
+}
+
+mount_iscsi() {
+  # Mount iSCSI target
+  ISCSI_DEV="${1##*,}"
+  ISCSI_OPTIONS="${1%,*}"
+
+  if [ ! -f "/usr/sbin/iscsistart" ]; then
+    error "iscsistart" "iSCSI support not available"
+  fi
+
+  if [ "$ISCSI_OPTIONS" = "auto" ]; then
+    progress "Network configuration based on iBFT"
+    /usr/sbin/iscsistart -N >&$SILENT_OUT 2>&1 || error "iscsistart" "Unable to configure network"
+    progress "iSCSI auto connect based on iBFT"
+    /usr/sbin/iscsistart -b >&$SILENT_OUT 2>&1 || error "iscsistart" "Unable to auto connect"
+  else
+    /usr/sbin/iscsistart $(get_iscsistart_options "$ISCSI_OPTIONS") >&$SILENT_OUT 2>&1 || error "iscsistart" "Unable to connect to ISCSI target"
+  fi
+
+  mount_common "$ISCSI_DEV" "$2" "$3" "$4"
+}
+
+mount_nbd() {
+# Mount NBD device
+  NBD_SERVER="${1%%:*}"
+  NBD_PORT="${1#*:}"
+  NBD_DEV="/dev/nbd$NBD_DEVS"
+
+  nbd-client $NBD_SERVER $NBD_PORT $NBD_DEV >&$SILENT_OUT 2>&1 || error "nbd-client" "Could not connect to NBD server $1"
+
+  mount_common "$NBD_DEV" "$2" "$3" "$4"
+
+  NBD_DEVS=$(( NBD_DEVS + 1 ))
+}
+
+mount_nfs() {
+  # Mount NFS export
+  NFS_EXPORT="${1%%,*}"
+  NFS_OPTIONS="${1#*,}"
+
+  [ "$NFS_OPTIONS" = "$1" ] && NFS_OPTIONS=
+
+  mount_common "$NFS_EXPORT" "$2" "$3,nolock,soft,timeo=3,retrans=2,rsize=32768,wsize=32768,$NFS_OPTIONS" "nfs"
+}
+
+mount_ubifs() {
+  mount_common "$1" "$2" "$3" "ubifs"
+}
+
+mount_part() {
+  # Mount a local or network filesystem
+  # $1:[TYPE=]target, $2:mountpoint, $3:mount options, [$4:fs type]
+  progress "mount filesystem $1 ..."
+
+  MOUNT_TARGET="${1#*=}"
+  case $1 in
+    /dev/ubi*)
+      MOUNT_CMD="mount_ubifs"
+      MOUNT_TARGET="$1"
+      RUN_FSCK="no"
+      ;;
+    LABEL=*|UUID=*|/*)
+      MOUNT_CMD="mount_common"
+      MOUNT_TARGET="$1"
+      ;;
+    ISCSI=*)
+      MOUNT_CMD="mount_iscsi"
+      ;;
+    NBD=*)
+      MOUNT_CMD="mount_nbd"
+      ;;
+    NFS=*)
+      MOUNT_CMD="mount_nfs"
+      ;;
+    *)
+      error "mount_part" "Unknown filesystem $1"
+      ;;
+  esac
+
+  # Substitute unique identifier if available or remove placeholder
+  MOUNT_TARGET="${MOUNT_TARGET//@UID@/$MACHINE_UID}"
+
+  $MOUNT_CMD "$MOUNT_TARGET" "$2" "$3" "$4"
+}
+
+mount_flash() {
+  progress "Mounting flash"
+
+  mount_part "$boot" "/flash" "ro,noatime"
+}
+
+mount_storage() {
+  progress "Mounting storage"
+
+  mount_part "$disk" "/storage" "rw,noatime"
+}
+
+# parse command line arguments
+for arg in $(cat /proc/cmdline); do
+  case $arg in
+    BOOT_IMAGE=*)
+      IMAGE_KERNEL="${arg#*=}"
+      [ "${IMAGE_KERNEL:0:1}" = "/" ] && IMAGE_KERNEL="${IMAGE_KERNEL:1}"
+      ;;
+    SYSTEM_IMAGE=*)
+      IMAGE_SYSTEM="${arg#*=}"
+      [ "${IMAGE_SYSTEM:0:1}" = "/" ] && IMAGE_SYSTEM="${IMAGE_SYSTEM:1}"
+      ;;
+    boot=*)
+      boot="${arg#*=}"
+      case $boot in
+        ISCSI=*|NBD=*|NFS=*)
+          UPDATE_DISABLED=yes
+          FLASH_NETBOOT=yes
+          ;;
+        /dev/*|LABEL=*|UUID=*)
+          RUN_FSCK_DISKS="$RUN_FSCK_DISKS $boot"
+          ;;
+      esac
+      ;;
+    disk=*)
+      disk="${arg#*=}"
+      case $disk in
+        ISCSI=*|NBD=*|NFS=*)
+          STORAGE_NETBOOT=yes
+          ;;
+        /dev/*|LABEL=*|UUID=*)
+          RUN_FSCK_DISKS="$RUN_FSCK_DISKS $disk"
+          ;;
+      esac
+      ;;
+    debugging)
+      DEBUG=yes
+      ;;
+    progress)
+      PROGRESS=yes
+      INIT_ARGS="$INIT_ARGS --show-status=1"
+      ;;
+  esac
+done
+
+if test "$DEBUG" = "yes"; then
+  exec 3>&1
+else
+  exec 3>/dev/null
+fi
+SILENT_OUT=3
+
+debug_msg "Unique identifier for this client: ${MACHINE_UID:-NOT AVAILABLE}"
+
+# main boot sequence
+for BOOT_STEP in \
+    mount_flash \
+    mount_storage; do
+  $BOOT_STEP
+  [ -n "$DEBUG" ] && break_after $BOOT_STEP
+done
