@@ -14,6 +14,12 @@ PKG_CONFIGURE_OPTS_TARGET="--disable-doc \
                            --enable-shared \
                            --disable-static"
 
+PKG_CONFIGURE_OPTS_INIT="$PKG_CONFIGURE_OPTS_TARGET"
+
+post_makeinstall_init() {
+  safe_remove ${INSTALL}/usr/bin
+}
+
 post_makeinstall_target() {
   safe_remove ${INSTALL}/usr/bin
 }
