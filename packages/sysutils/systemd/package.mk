@@ -9,6 +9,7 @@ PKG_LICENSE="LGPL2.1+"
 PKG_SITE="http://www.freedesktop.org/wiki/Software/systemd"
 PKG_URL="https://github.com/systemd/systemd/archive/v$PKG_VERSION.tar.gz"
 PKG_DEPENDS_TARGET="toolchain libcap kmod util-linux entropy libidn2"
+PKG_DEPENDS_INIT="kmod:init util-linux:init libidn2:init systemd"
 PKG_LONGDESC="A system and session manager for Linux, compatible with SysV and LSB init scripts."
 
 PKG_MESON_OPTS_TARGET="--libdir=/usr/lib \
@@ -91,6 +92,14 @@ PKG_MESON_OPTS_TARGET="--libdir=/usr/lib \
                        -Dumount-path=/usr/bin/umount \
                        -Ddebug-tty=$DEBUG_TTY \
                        -Dversion-tag=${PKG_VERSION}"
+
+configure_init() {
+  : # reuse configure_target()
+}
+
+make_init() {
+  : # reuse make_target()
+}
 
 pre_configure_target() {
   export CFLAGS="$CFLAGS -fno-schedule-insns -fno-schedule-insns2 -Wno-format-truncation"
@@ -258,4 +267,52 @@ post_install() {
   enable_service kernel-overlays.service
   enable_service hwdb.service
   enable_service debug-shell.service
+}
+
+makeinstall_init() {
+  cp -a $PKG_BUILD/.install_pkg $PKG_BUILD/.install_init
+}
+
+post_makeinstall_init() {
+
+  rm -rf $INSTALL/usr/share
+
+  ln -sf initrd.target $INSTALL/usr/lib/systemd/system/default.target
+
+  cp -a $PKG_BUILD/units/initrd.target $INSTALL/usr/lib/systemd/system/
+  cp -a $PKG_BUILD/units/initrd-fs.target $INSTALL/usr/lib/systemd/system/
+  cp -a $PKG_BUILD/units/initrd-root-device.target $INSTALL/usr/lib/systemd/system/
+  cp -a $PKG_BUILD/units/initrd-root-fs.target $INSTALL/usr/lib/systemd/system/
+  cp -a $PKG_BUILD/units/initrd-switch-root.target $INSTALL/usr/lib/systemd/system/
+
+  cp -a $PKG_BUILD/.$TARGET_NAME/units/initrd-switch-root.service $INSTALL/usr/lib/systemd/system/
+  cp -a $PKG_BUILD/.$TARGET_NAME/units/initrd-cleanup.service $INSTALL/usr/lib/systemd/system/
+  cp -a $PKG_BUILD/.$TARGET_NAME/units/initrd-udevadm-cleanup-db.service $INSTALL/usr/lib/systemd/system/
+  cp -a $PKG_BUILD/.$TARGET_NAME/units/initrd-parse-etc.service $INSTALL/usr/lib/systemd/system/
+
+  ln -sf /usr/lib/systemd/systemd $INSTALL/init
+
+  mkdir -p $INSTALL/etc/systemd
+  # We must use a volatile journal, and we don't want rate-limiting
+  {
+    echo "[Journal]"
+    echo "Storage=volatile"
+    echo "RateLimitInterval=0"
+    echo "RateLimitBurst=0"
+  } >> $INSTALL/etc/systemd/journald.conf
+
+  mkdir -p $INSTALL/usr/lib/
+    {
+      echo NAME=\"$NAME\"
+      echo VERSION=\"$VERSION\"
+    } > $INSTALL/usr/lib/initrd-release
+
+    ln -sf initrd-release $INSTALL/usr/lib/os-release
+
+  mkdir -p $INSTALL/etc/
+    ln -sf /usr/lib/initrd-release $INSTALL/etc/initrd-release
+    ln -sf initrd-release $INSTALL/etc/os-release
+
+  mkdir -p $INSTALL/usr/lib/systemd/system
+    cp $PKG_DIR/system.d.init/emergency.service $INSTALL/usr/lib/systemd/system
 }
