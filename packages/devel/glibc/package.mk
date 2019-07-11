@@ -144,6 +144,11 @@ post_makeinstall_target() {
   if [ "$TARGET_ARCH" = "arm" -a "$TARGET_FLOAT" = "hard" ]; then
     ln -sf ld.so $INSTALL/usr/lib/ld-linux.so.3
   fi
+
+# add cross ldd script
+  mkdir -p $TOOLCHAIN/bin/
+    cp $PKG_DIR/scripts/cross-compile-ldd $TOOLCHAIN/bin/$TARGET_NAME-ldd
+    chmod +x $TOOLCHAIN/bin/$TARGET_NAME-ldd
 }
 
 configure_init() {
