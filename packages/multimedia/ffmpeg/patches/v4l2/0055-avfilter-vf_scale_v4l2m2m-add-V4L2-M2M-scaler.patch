@@ -1,0 +1,441 @@
+From a82e74ebc884925d86f927749f1d56b1deee76fb Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Fri, 23 Aug 2019 12:31:10 -0700
+Subject: [PATCH 55/59] avfilter/vf_scale_v4l2m2m: add V4L2 M2M scaler
+
+works on Raspberry Pi using /dev/video12 wrapper for OMX.broadcom.isp
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ configure                      |   1 +
+ libavcodec/v4l2_buffers.c      |   2 +
+ libavcodec/v4l2_m2m.h          |   4 +
+ libavfilter/Makefile           |   1 +
+ libavfilter/allfilters.c       |   1 +
+ libavfilter/vf_scale_v4l2m2m.c | 343 +++++++++++++++++++++++++++++++++
+ 6 files changed, 352 insertions(+)
+ create mode 100644 libavfilter/vf_scale_v4l2m2m.c
+
+diff --git a/configure b/configure
+index 63c6104ae4..62768b2244 100755
+--- a/configure
++++ b/configure
+@@ -3428,6 +3428,7 @@ zmq_filter_deps="libzmq"
+ zoompan_filter_deps="swscale"
+ zscale_filter_deps="libzimg const_nan"
+ scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
++scale_v4l2m2m_filter_deps="v4l2_m2m"
+ vpp_qsv_filter_deps="libmfx"
+ vpp_qsv_filter_select="qsvvpp"
+ 
+diff --git a/libavcodec/v4l2_buffers.c b/libavcodec/v4l2_buffers.c
+index 4f59463472..8424fbcd3e 100644
+--- a/libavcodec/v4l2_buffers.c
++++ b/libavcodec/v4l2_buffers.c
+@@ -60,6 +60,8 @@ static inline AVRational v4l2_get_timebase(V4L2Buffer *avbuf)
+ {
+     V4L2m2mContext *s = buf_to_m2mctx(avbuf);
+ 
++    if (s->filterctx)
++        return s->filterctx->inputs[0]->time_base;
+     if (s->avctx->pkt_timebase.num)
+         return s->avctx->pkt_timebase;
+     return s->avctx->time_base;
+diff --git a/libavcodec/v4l2_m2m.h b/libavcodec/v4l2_m2m.h
+index 662e682aa5..b94d724a93 100644
+--- a/libavcodec/v4l2_m2m.h
++++ b/libavcodec/v4l2_m2m.h
+@@ -30,6 +30,7 @@
+ #include <linux/videodev2.h>
+ 
+ #include "libavcodec/avcodec.h"
++#include "libavfilter/avfilter.h"
+ #include "v4l2_context.h"
+ 
+ #define container_of(ptr, type, member) ({ \
+@@ -48,6 +49,9 @@ typedef struct V4L2m2mContext {
+     V4L2Context capture;
+     V4L2Context output;
+ 
++    /* filter context */
++    AVFilterContext *filterctx;
++
+     /* dynamic stream reconfig */
+     AVCodecContext *avctx;
+     sem_t refsync;
+diff --git a/libavfilter/Makefile b/libavfilter/Makefile
+index bcd5d437ff..bd46bd2e0c 100644
+--- a/libavfilter/Makefile
++++ b/libavfilter/Makefile
+@@ -304,6 +304,7 @@ OBJS-$(CONFIG_SCALE_CUDA_FILTER)             += vf_scale_cuda.o vf_scale_cuda.pt
+ OBJS-$(CONFIG_SCALE_NPP_FILTER)              += vf_scale_npp.o scale.o
+ OBJS-$(CONFIG_SCALE_QSV_FILTER)              += vf_scale_qsv.o
+ OBJS-$(CONFIG_SCALE_VAAPI_FILTER)            += vf_scale_vaapi.o scale.o vaapi_vpp.o
++OBJS-$(CONFIG_SCALE_V4L2M2M_FILTER)          += vf_scale_v4l2m2m.o scale.o
+ OBJS-$(CONFIG_SCALE2REF_FILTER)              += vf_scale.o scale.o
+ OBJS-$(CONFIG_SELECT_FILTER)                 += f_select.o
+ OBJS-$(CONFIG_SELECTIVECOLOR_FILTER)         += vf_selectivecolor.o
+diff --git a/libavfilter/allfilters.c b/libavfilter/allfilters.c
+index 68b2992027..01a42d28cc 100644
+--- a/libavfilter/allfilters.c
++++ b/libavfilter/allfilters.c
+@@ -295,6 +295,7 @@ extern AVFilter ff_vf_scale_cuda;
+ extern AVFilter ff_vf_scale_npp;
+ extern AVFilter ff_vf_scale_qsv;
+ extern AVFilter ff_vf_scale_vaapi;
++extern AVFilter ff_vf_scale_v4l2m2m;
+ extern AVFilter ff_vf_scale2ref;
+ extern AVFilter ff_vf_select;
+ extern AVFilter ff_vf_selectivecolor;
+diff --git a/libavfilter/vf_scale_v4l2m2m.c b/libavfilter/vf_scale_v4l2m2m.c
+new file mode 100644
+index 0000000000..a5ffa9953e
+--- /dev/null
++++ b/libavfilter/vf_scale_v4l2m2m.c
+@@ -0,0 +1,343 @@
++/*
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <string.h>
++
++#include "libavutil/avassert.h"
++#include "libavutil/mem.h"
++#include "libavutil/opt.h"
++#include "libavutil/pixdesc.h"
++#include "libavcodec/v4l2_m2m.h"
++#include "libavfilter/bufferqueue.h"
++
++#include "avfilter.h"
++#include "formats.h"
++#include "internal.h"
++#include "scale.h"
++#include "video.h"
++
++typedef struct ScaleV4L2Context {
++    V4L2m2mPriv v4l2m2m_priv; // must be first, contains AVClass*
++
++    char *w_expr;      // width expression string
++    char *h_expr;      // height expression string
++
++    int output_format;
++    int output_width, output_height;
++
++    int eof;
++    struct FFBufQueue frame_queue;
++} ScaleV4L2Context;
++
++static int scale_v4l2_config_output(AVFilterLink *outlink)
++{
++    AVFilterLink *inlink    = outlink->src->inputs[0];
++    AVFilterContext *avctx  = outlink->src;
++    ScaleV4L2Context *ctx   = avctx->priv;
++    V4L2m2mPriv *priv       = &ctx->v4l2m2m_priv;
++    V4L2m2mContext *s       = priv->context;
++    V4L2Context *capture, *output;
++    int err;
++
++    if ((err = ff_scale_eval_dimensions(ctx,
++                                        ctx->w_expr, ctx->h_expr,
++                                        inlink, outlink,
++                                        &ctx->output_width, &ctx->output_height)) < 0)
++        return err;
++
++    if (!ctx->output_width)
++        ctx->output_width  = avctx->inputs[0]->w;
++    if (!ctx->output_height)
++        ctx->output_height = avctx->inputs[0]->h;
++
++    if (inlink->sample_aspect_ratio.num)
++        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
++    else
++        outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
++
++    outlink->w = ctx->output_width;
++    outlink->h = ctx->output_height;
++
++    capture = &s->capture;
++    output  = &s->output;
++
++    /* dimension settings */
++    output->height = avctx->inputs[0]->h;
++    output->width = avctx->inputs[0]->w;
++    capture->height = ctx->output_height;
++    capture->width = ctx->output_width;
++
++    /* output context */
++    output->av_codec_id = AV_CODEC_ID_RAWVIDEO;
++    output->av_pix_fmt = avctx->inputs[0]->format;
++    if (output->av_pix_fmt == AV_PIX_FMT_DRM_PRIME)
++        output->sw_pix_fmt = AV_PIX_FMT_NV12;
++
++    /* capture context */
++    capture->av_codec_id = AV_CODEC_ID_RAWVIDEO;
++    capture->av_pix_fmt = avctx->outputs[0]->format;
++    if (capture->av_pix_fmt == AV_PIX_FMT_DRM_PRIME)
++        capture->sw_pix_fmt = AV_PIX_FMT_NV12;
++
++    if (output->av_pix_fmt == AV_PIX_FMT_DRM_PRIME ||
++        capture->av_pix_fmt == AV_PIX_FMT_DRM_PRIME) {
++        if (avctx->hw_device_ctx) {
++            s->device_ref = av_buffer_ref(avctx->hw_device_ctx);
++        } else {
++            s->device_ref = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_DRM);
++            if (!s->device_ref)
++                return AVERROR(ENOMEM);
++
++            err = av_hwdevice_ctx_init(s->device_ref);
++            if (err < 0) {
++                av_buffer_unref(&s->device_ref);
++                return err;
++            }
++        }
++    }
++
++    err = ff_v4l2_m2m_codec_init(priv);
++    if (err) {
++        av_log(avctx, AV_LOG_ERROR, "can't configure encoder\n");
++        return err;
++    }
++
++    return 0;
++}
++
++static int scale_v4l2_dequeue(AVFilterContext *avctx, int timeout)
++{
++    ScaleV4L2Context *ctx   = avctx->priv;
++    AVFilterLink *outlink   = avctx->outputs[0];
++    AVFrame *input_frame    = NULL;
++    AVFrame *output_frame   = NULL;
++    V4L2m2mPriv *priv       = &ctx->v4l2m2m_priv;
++    V4L2m2mContext *s       = priv->context;
++    int err;
++    V4L2Context *capture;
++
++    if (!ctx->frame_queue.available)
++        return ctx->eof ? AVERROR_EOF : AVERROR(EAGAIN);
++
++    if (outlink->format == AV_PIX_FMT_DRM_PRIME)
++        output_frame = av_frame_alloc();
++    else
++        output_frame = ff_get_video_buffer(outlink, ctx->output_width,
++                                           ctx->output_height);
++    if (!output_frame) {
++        err = AVERROR(ENOMEM);
++        goto fail;
++    }
++
++    capture = &s->capture;
++
++    err = ff_v4l2_context_dequeue_frame(capture, output_frame, timeout);
++    if (err < 0)
++        goto fail;
++
++    input_frame = ff_bufqueue_get(&ctx->frame_queue);
++    err = av_frame_copy_props(output_frame, input_frame);
++    if (err < 0)
++        goto fail;
++
++    av_frame_free(&input_frame);
++
++    return ff_filter_frame(outlink, output_frame);
++
++fail:
++    av_frame_free(&input_frame);
++    av_frame_free(&output_frame);
++    return err;
++}
++
++static int scale_v4l2_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
++{
++    AVFilterContext *avctx  = inlink->dst;
++    ScaleV4L2Context *ctx   = avctx->priv;
++    V4L2m2mPriv *priv       = &ctx->v4l2m2m_priv;
++    V4L2m2mContext *s       = priv->context;
++    V4L2Context *capture, *output;
++    int err;
++
++    av_log(avctx, AV_LOG_DEBUG, "Filter input: %s, %ux%u (%"PRId64").\n",
++           av_get_pix_fmt_name(input_frame->format),
++           input_frame->width, input_frame->height, input_frame->pts);
++
++    capture = &s->capture;
++    output  = &s->output;
++
++    err = ff_v4l2_context_enqueue_frame(output, input_frame);
++    if (err < 0)
++        return err;
++    ff_bufqueue_add(avctx, &ctx->frame_queue, input_frame);
++
++    if (!output->streamon) {
++        err = ff_v4l2_context_set_status(output, VIDIOC_STREAMON);
++        if (err) {
++            av_log(avctx, AV_LOG_ERROR, "VIDIOC_STREAMON failed on output context: %s\n", strerror(errno));
++            return err;
++        }
++    }
++    if (!capture->streamon) {
++        err = ff_v4l2_context_set_status(capture, VIDIOC_STREAMON);
++        if (err) {
++            av_log(avctx, AV_LOG_ERROR, "VIDIOC_STREAMON failed on capture context: %s\n", strerror(errno));
++            return err;
++        }
++    }
++
++    err = scale_v4l2_dequeue(avctx, 0);
++    if (err == AVERROR(EAGAIN))
++        return 0;
++
++    return err;
++}
++
++static int scale_v4l2_request_frame(AVFilterLink *outlink)
++{
++    AVFilterContext *avctx  = outlink->src;
++    ScaleV4L2Context *ctx   = avctx->priv;
++    V4L2m2mPriv *priv       = &ctx->v4l2m2m_priv;
++    V4L2m2mContext *s       = priv->context;
++    int err, timeout = 0;
++
++    /* if feeding in dmabuf, wait to receive a frame so we can
++     * free the underlying buffer and return it to the decoder.
++     */
++    if (s->output.av_pix_fmt == AV_PIX_FMT_DRM_PRIME)
++        timeout = -1;
++
++    err = scale_v4l2_dequeue(avctx, timeout);
++    if (err != AVERROR(EAGAIN))
++        return err;
++
++    err = ff_request_frame(outlink->src->inputs[0]);
++    if (err == AVERROR_EOF) {
++        ctx->eof = 1;
++        s->draining = 1;
++        err = scale_v4l2_dequeue(avctx, -1);
++    }
++
++    return err;
++}
++
++static int scale_v4l2_query_formats(AVFilterContext *avctx)
++{
++    ScaleV4L2Context *ctx = avctx->priv;
++    static const enum AVPixelFormat hw_pixel_formats[] = {
++        AV_PIX_FMT_DRM_PRIME,
++        AV_PIX_FMT_NONE,
++    };
++    static const enum AVPixelFormat pixel_formats[] = {
++        AV_PIX_FMT_DRM_PRIME,
++        AV_PIX_FMT_YUV420P,
++        AV_PIX_FMT_NV12,
++        AV_PIX_FMT_NONE,
++    };
++    int ret;
++
++    if (ctx->output_format == AV_PIX_FMT_DRM_PRIME) {
++        if ((ret = ff_formats_ref(ff_make_format_list(pixel_formats),
++                                  &avctx->inputs[0]->out_formats)) < 0)
++            return ret;
++        if ((ret = ff_formats_ref(ff_make_format_list(hw_pixel_formats),
++                                  &avctx->outputs[0]->in_formats)) < 0)
++            return ret;
++    } else {
++        if ((ret = ff_set_common_formats(avctx, ff_make_format_list(pixel_formats))) < 0)
++            return ret;
++    }
++
++    return 0;
++}
++
++static av_cold int scale_v4l2_init(AVFilterContext *avctx)
++{
++    ScaleV4L2Context *ctx = avctx->priv;
++    V4L2m2mContext *s;
++    int ret;
++
++    ret = ff_v4l2_m2m_create_context(&ctx->v4l2m2m_priv, &s);
++    if (ret < 0)
++        return ret;
++    s->filterctx = avctx;
++
++    return 0;
++}
++
++static av_cold void scale_v4l2_uninit(AVFilterContext *avctx)
++{
++    ScaleV4L2Context *ctx = avctx->priv;
++    V4L2m2mPriv *priv     = &ctx->v4l2m2m_priv;
++
++    ff_v4l2_m2m_codec_end(priv);
++    ff_bufqueue_discard_all(&ctx->frame_queue);
++}
++
++#define OFFSET(x) offsetof(ScaleV4L2Context, x)
++#define FLAGS (AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM)
++static const AVOption scale_v4l2m2m_options[] = {
++    { "w", "Output video width",
++      OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, .flags = FLAGS },
++    { "h", "Output video height",
++      OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, .flags = FLAGS },
++    { "format", "Optional format conversion with scaling",
++      OFFSET(output_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, AV_PIX_FMT_NONE, INT_MAX, .flags = FLAGS },
++
++#undef OFFSET
++#define OFFSET(x) offsetof(V4L2m2mPriv, x)
++
++    V4L_M2M_DEFAULT_OPTS,
++    { "num_capture_buffers", "Number of buffers in the capture context",
++        OFFSET(num_capture_buffers), AV_OPT_TYPE_INT, {.i64 = 4 }, 4, INT_MAX, FLAGS },
++
++    { NULL },
++};
++
++AVFILTER_DEFINE_CLASS(scale_v4l2m2m);
++
++static const AVFilterPad scale_v4l2_inputs[] = {
++    {
++        .name         = "default",
++        .type         = AVMEDIA_TYPE_VIDEO,
++        .filter_frame = &scale_v4l2_filter_frame,
++    },
++    { NULL }
++};
++
++static const AVFilterPad scale_v4l2_outputs[] = {
++    {
++        .name = "default",
++        .type = AVMEDIA_TYPE_VIDEO,
++        .config_props  = &scale_v4l2_config_output,
++        .request_frame = &scale_v4l2_request_frame,
++    },
++    { NULL }
++};
++
++AVFilter ff_vf_scale_v4l2m2m = {
++    .name          = "scale_v4l2m2m",
++    .description   = NULL_IF_CONFIG_SMALL("Scale using V4L2 M2M device."),
++    .priv_size     = sizeof(ScaleV4L2Context),
++    .init          = &scale_v4l2_init,
++    .uninit        = &scale_v4l2_uninit,
++    .query_formats = &scale_v4l2_query_formats,
++    .inputs        = scale_v4l2_inputs,
++    .outputs       = scale_v4l2_outputs,
++    .priv_class    = &scale_v4l2m2m_class,
++};
+-- 
+2.21.0
+

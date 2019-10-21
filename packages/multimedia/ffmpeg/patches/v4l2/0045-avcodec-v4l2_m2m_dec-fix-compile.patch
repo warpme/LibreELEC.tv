@@ -1,0 +1,27 @@
+From 13fcdc52a4d4c67fc59848c08d4e4db318c2bdc7 Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Wed, 11 Sep 2019 11:29:38 -0700
+Subject: [PATCH 45/59] avcodec/v4l2_m2m_dec: fix compile
+
+internal.h header required for FF_CODEC_CAP_SETS_PKT_DTS
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m_dec.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/libavcodec/v4l2_m2m_dec.c b/libavcodec/v4l2_m2m_dec.c
+index d0f1c41f9d..0c3fa3a7be 100644
+--- a/libavcodec/v4l2_m2m_dec.c
++++ b/libavcodec/v4l2_m2m_dec.c
+@@ -28,6 +28,7 @@
+ #include "libavutil/opt.h"
+ #include "libavcodec/avcodec.h"
+ #include "libavcodec/decode.h"
++#include "libavcodec/internal.h"
+ 
+ #include "v4l2_context.h"
+ #include "v4l2_m2m.h"
+-- 
+2.21.0
+

@@ -1,0 +1,35 @@
+From 3e7cdb1f8dab1dc66fba65d96d20e145a1e61ec9 Mon Sep 17 00:00:00 2001
+From: Michael Niedermayer <michael@niedermayer.cc>
+Date: Wed, 19 Sep 2018 18:05:28 +0200
+Subject: [PATCH 08/59] libavcodec/v4l2_buffers.h: fix cant typos
+
+Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+---
+ libavcodec/v4l2_buffers.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libavcodec/v4l2_buffers.h b/libavcodec/v4l2_buffers.h
+index dc5cc9e267..7a57caf949 100644
+--- a/libavcodec/v4l2_buffers.h
++++ b/libavcodec/v4l2_buffers.h
+@@ -72,7 +72,7 @@ typedef struct V4L2Buffer {
+  * @param[in] buf The V4L2Buffer to get the information from
+  *
+  * @returns 0 in case of success, AVERROR(EINVAL) if the number of planes is incorrect,
+- * AVERROR(ENOMEM) if the AVBufferRef cant be created.
++ * AVERROR(ENOMEM) if the AVBufferRef can't be created.
+  */
+ int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *buf);
+ 
+@@ -83,7 +83,7 @@ int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *buf);
+  * @param[in] buf The V4L2Buffer to get the information from
+  *
+  * @returns 0 in case of success, AVERROR(EINVAL) if the number of planes is incorrect,
+- * AVERROR(ENOMEM) if the AVBufferRef cant be created.
++ * AVERROR(ENOMEM) if the AVBufferRef can't be created.
+  *
+  */
+ int ff_v4l2_buffer_buf_to_avpkt(AVPacket *pkt, V4L2Buffer *buf);
+-- 
+2.21.0
+

@@ -1,0 +1,33 @@
+From 6dca51a08c4de2e2f06178c35812ea0646b2d97b Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Fri, 23 Aug 2019 12:31:24 -0700
+Subject: [PATCH 27/59] avcodec/v4l2_m2m: use log_ctx variable consistently
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libavcodec/v4l2_m2m.c b/libavcodec/v4l2_m2m.c
+index 82ff847cf7..0bd6cc0f92 100644
+--- a/libavcodec/v4l2_m2m.c
++++ b/libavcodec/v4l2_m2m.c
+@@ -254,13 +254,13 @@ int ff_v4l2_m2m_codec_full_reinit(V4L2m2mContext *s)
+ 
+     ret = ff_v4l2_context_set_status(&s->output, VIDIOC_STREAMOFF);
+     if (ret) {
+-        av_log(s->avctx, AV_LOG_ERROR, "output VIDIOC_STREAMOFF\n");
++        av_log(log_ctx, AV_LOG_ERROR, "output VIDIOC_STREAMOFF\n");
+         goto error;
+     }
+ 
+     ret = ff_v4l2_context_set_status(&s->capture, VIDIOC_STREAMOFF);
+     if (ret) {
+-            av_log(s->avctx, AV_LOG_ERROR, "capture VIDIOC_STREAMOFF\n");
++            av_log(log_ctx, AV_LOG_ERROR, "capture VIDIOC_STREAMOFF\n");
+             goto error;
+     }
+ 
+-- 
+2.21.0
+

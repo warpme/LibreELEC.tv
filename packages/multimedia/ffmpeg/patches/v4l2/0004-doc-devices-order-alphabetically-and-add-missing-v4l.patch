@@ -1,0 +1,355 @@
+From 3e25d4522b324796cc1a362ea1e6b8d1f737d440 Mon Sep 17 00:00:00 2001
+From: Lou Logan <lou@lrcd.com>
+Date: Wed, 13 Jun 2018 11:21:12 -0800
+Subject: [PATCH 04/59] doc/devices: order alphabetically and add missing v4l2
+ outdev
+
+Signed-off-by: Lou Logan <lou@lrcd.com>
+---
+ doc/indevs.texi  | 221 +++++++++++++++++++++++------------------------
+ doc/outdevs.texi |  62 ++++++-------
+ 2 files changed, 143 insertions(+), 140 deletions(-)
+
+diff --git a/doc/indevs.texi b/doc/indevs.texi
+index 6951940a93..c4ec379377 100644
+--- a/doc/indevs.texi
++++ b/doc/indevs.texi
+@@ -402,116 +402,6 @@ ffmpeg -channels 16 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder'
+ 
+ @end itemize
+ 
+-@section kmsgrab
+-
+-KMS video input device.
+-
+-Captures the KMS scanout framebuffer associated with a specified CRTC or plane as a
+-DRM object that can be passed to other hardware functions.
+-
+-Requires either DRM master or CAP_SYS_ADMIN to run.
+-
+-If you don't understand what all of that means, you probably don't want this.  Look at
+-@option{x11grab} instead.
+-
+-@subsection Options
+-
+-@table @option
+-
+-@item device
+-DRM device to capture on.  Defaults to @option{/dev/dri/card0}.
+-
+-@item format
+-Pixel format of the framebuffer.  Defaults to @option{bgr0}.
+-
+-@item format_modifier
+-Format modifier to signal on output frames.  This is necessary to import correctly into
+-some APIs, but can't be autodetected.  See the libdrm documentation for possible values.
+-
+-@item crtc_id
+-KMS CRTC ID to define the capture source.  The first active plane on the given CRTC
+-will be used.
+-
+-@item plane_id
+-KMS plane ID to define the capture source.  Defaults to the first active plane found if
+-neither @option{crtc_id} nor @option{plane_id} are specified.
+-
+-@item framerate
+-Framerate to capture at.  This is not synchronised to any page flipping or framebuffer
+-changes - it just defines the interval at which the framebuffer is sampled.  Sampling
+-faster than the framebuffer update rate will generate independent frames with the same
+-content.  Defaults to @code{30}.
+-
+-@end table
+-
+-@subsection Examples
+-
+-@itemize
+-
+-@item
+-Capture from the first active plane, download the result to normal frames and encode.
+-This will only work if the framebuffer is both linear and mappable - if not, the result
+-may be scrambled or fail to download.
+-@example
+-ffmpeg -f kmsgrab -i - -vf 'hwdownload,format=bgr0' output.mp4
+-@end example
+-
+-@item
+-Capture from CRTC ID 42 at 60fps, map the result to VAAPI, convert to NV12 and encode as H.264.
+-@example
+-ffmpeg -crtc_id 42 -framerate 60 -f kmsgrab -i - -vf 'hwmap=derive_device=vaapi,scale_vaapi=w=1920:h=1080:format=nv12' -c:v h264_vaapi output.mp4
+-@end example
+-
+-@end itemize
+-
+-@section libndi_newtek
+-
+-The libndi_newtek input device provides capture capabilities for using NDI (Network
+-Device Interface, standard created by NewTek).
+-
+-Input filename is a NDI source name that could be found by sending -find_sources 1
+-to command line - it has no specific syntax but human-readable formatted.
+-
+-To enable this input device, you need the NDI SDK and you
+-need to configure with the appropriate @code{--extra-cflags}
+-and @code{--extra-ldflags}.
+-
+-@subsection Options
+-
+-@table @option
+-
+-@item find_sources
+-If set to @option{true}, print a list of found/available NDI sources and exit.
+-Defaults to @option{false}.
+-
+-@item wait_sources
+-Override time to wait until the number of online sources have changed.
+-Defaults to @option{0.5}.
+-
+-@item allow_video_fields
+-When this flag is @option{false}, all video that you receive will be progressive.
+-Defaults to @option{true}.
+-
+-@end table
+-
+-@subsection Examples
+-
+-@itemize
+-
+-@item
+-List input devices:
+-@example
+-ffmpeg -f libndi_newtek -find_sources 1 -i dummy
+-@end example
+-
+-@item
+-Restream to NDI:
+-@example
+-ffmpeg -f libndi_newtek -i "DEV-5.INTERNAL.M1STEREO.TV (NDI_SOURCE_NAME_1)" -f libndi_newtek -y NDI_SOURCE_NAME_2
+-@end example
+-
+-@end itemize
+-
+ @section dshow
+ 
+ Windows DirectShow input device.
+@@ -939,6 +829,68 @@ Set the number of channels. Default is 2.
+ 
+ @end table
+ 
++@section kmsgrab
++
++KMS video input device.
++
++Captures the KMS scanout framebuffer associated with a specified CRTC or plane as a
++DRM object that can be passed to other hardware functions.
++
++Requires either DRM master or CAP_SYS_ADMIN to run.
++
++If you don't understand what all of that means, you probably don't want this.  Look at
++@option{x11grab} instead.
++
++@subsection Options
++
++@table @option
++
++@item device
++DRM device to capture on.  Defaults to @option{/dev/dri/card0}.
++
++@item format
++Pixel format of the framebuffer.  Defaults to @option{bgr0}.
++
++@item format_modifier
++Format modifier to signal on output frames.  This is necessary to import correctly into
++some APIs, but can't be autodetected.  See the libdrm documentation for possible values.
++
++@item crtc_id
++KMS CRTC ID to define the capture source.  The first active plane on the given CRTC
++will be used.
++
++@item plane_id
++KMS plane ID to define the capture source.  Defaults to the first active plane found if
++neither @option{crtc_id} nor @option{plane_id} are specified.
++
++@item framerate
++Framerate to capture at.  This is not synchronised to any page flipping or framebuffer
++changes - it just defines the interval at which the framebuffer is sampled.  Sampling
++faster than the framebuffer update rate will generate independent frames with the same
++content.  Defaults to @code{30}.
++
++@end table
++
++@subsection Examples
++
++@itemize
++
++@item
++Capture from the first active plane, download the result to normal frames and encode.
++This will only work if the framebuffer is both linear and mappable - if not, the result
++may be scrambled or fail to download.
++@example
++ffmpeg -f kmsgrab -i - -vf 'hwdownload,format=bgr0' output.mp4
++@end example
++
++@item
++Capture from CRTC ID 42 at 60fps, map the result to VAAPI, convert to NV12 and encode as H.264.
++@example
++ffmpeg -crtc_id 42 -framerate 60 -f kmsgrab -i - -vf 'hwmap=derive_device=vaapi,scale_vaapi=w=1920:h=1080:format=nv12' -c:v h264_vaapi output.mp4
++@end example
++
++@end itemize
++
+ @section lavfi
+ 
+ Libavfilter input virtual device.
+@@ -1077,6 +1029,54 @@ IIDC1394 input device, based on libdc1394 and libraw1394.
+ 
+ Requires the configure option @code{--enable-libdc1394}.
+ 
++@section libndi_newtek
++
++The libndi_newtek input device provides capture capabilities for using NDI (Network
++Device Interface, standard created by NewTek).
++
++Input filename is a NDI source name that could be found by sending -find_sources 1
++to command line - it has no specific syntax but human-readable formatted.
++
++To enable this input device, you need the NDI SDK and you
++need to configure with the appropriate @code{--extra-cflags}
++and @code{--extra-ldflags}.
++
++@subsection Options
++
++@table @option
++
++@item find_sources
++If set to @option{true}, print a list of found/available NDI sources and exit.
++Defaults to @option{false}.
++
++@item wait_sources
++Override time to wait until the number of online sources have changed.
++Defaults to @option{0.5}.
++
++@item allow_video_fields
++When this flag is @option{false}, all video that you receive will be progressive.
++Defaults to @option{true}.
++
++@end table
++
++@subsection Examples
++
++@itemize
++
++@item
++List input devices:
++@example
++ffmpeg -f libndi_newtek -find_sources 1 -i dummy
++@end example
++
++@item
++Restream to NDI:
++@example
++ffmpeg -f libndi_newtek -i "DEV-5.INTERNAL.M1STEREO.TV (NDI_SOURCE_NAME_1)" -f libndi_newtek -y NDI_SOURCE_NAME_2
++@end example
++
++@end itemize
++
+ @section openal
+ 
+ The OpenAL input device provides audio capture on all systems with a
+@@ -1195,7 +1195,6 @@ Set the number of channels. Default is 2.
+ 
+ @end table
+ 
+-
+ @section pulse
+ 
+ PulseAudio input device.
+diff --git a/doc/outdevs.texi b/doc/outdevs.texi
+index daf7b1ae62..e1a638434d 100644
+--- a/doc/outdevs.texi
++++ b/doc/outdevs.texi
+@@ -182,6 +182,35 @@ ffmpeg -i test.avi -f decklink -pix_fmt uyvy422 -s 720x486 -r 24000/1001 'DeckLi
+ 
+ @end itemize
+ 
++@section fbdev
++
++Linux framebuffer output device.
++
++The Linux framebuffer is a graphic hardware-independent abstraction
++layer to show graphics on a computer monitor, typically on the
++console. It is accessed through a file device node, usually
++@file{/dev/fb0}.
++
++For more detailed information read the file
++@file{Documentation/fb/framebuffer.txt} included in the Linux source tree.
++
++@subsection Options
++@table @option
++
++@item xoffset
++@item yoffset
++Set x/y coordinate of top left corner. Default is 0.
++@end table
++
++@subsection Examples
++Play a file on framebuffer device @file{/dev/fb0}.
++Required pixel format depends on current framebuffer settings.
++@example
++ffmpeg -re -i INPUT -c:v rawvideo -pix_fmt bgra -f fbdev /dev/fb0
++@end example
++
++See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
++
+ @section libndi_newtek
+ 
+ The libndi_newtek output device provides playback capabilities for using NDI (Network
+@@ -227,35 +256,6 @@ ffmpeg -i "udp://@@239.1.1.1:10480?fifo_size=1000000&overrun_nonfatal=1" -vf "sc
+ 
+ @end itemize
+ 
+-@section fbdev
+-
+-Linux framebuffer output device.
+-
+-The Linux framebuffer is a graphic hardware-independent abstraction
+-layer to show graphics on a computer monitor, typically on the
+-console. It is accessed through a file device node, usually
+-@file{/dev/fb0}.
+-
+-For more detailed information read the file
+-@file{Documentation/fb/framebuffer.txt} included in the Linux source tree.
+-
+-@subsection Options
+-@table @option
+-
+-@item xoffset
+-@item yoffset
+-Set x/y coordinate of top left corner. Default is 0.
+-@end table
+-
+-@subsection Examples
+-Play a file on framebuffer device @file{/dev/fb0}.
+-Required pixel format depends on current framebuffer settings.
+-@example
+-ffmpeg -re -i INPUT -c:v rawvideo -pix_fmt bgra -f fbdev /dev/fb0
+-@end example
+-
+-See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
+-
+ @section opengl
+ OpenGL output device.
+ 
+@@ -420,6 +420,10 @@ ffmpeg -i INPUT -c:v rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL out
+ 
+ sndio audio output device.
+ 
++@section v4l2
++
++Video4Linux2 output device.
++
+ @section xv
+ 
+ XV (XVideo) output device.
+-- 
+2.21.0
+

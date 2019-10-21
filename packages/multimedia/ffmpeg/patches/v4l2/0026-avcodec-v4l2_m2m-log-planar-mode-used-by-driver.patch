@@ -1,0 +1,28 @@
+From df181925705ff69d2753e9240f70fc3ab5c70820 Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Thu, 22 Aug 2019 11:03:31 -0700
+Subject: [PATCH 26/59] avcodec/v4l2_m2m: log planar mode used by driver
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/libavcodec/v4l2_m2m.c b/libavcodec/v4l2_m2m.c
+index 626ccb2f7b..82ff847cf7 100644
+--- a/libavcodec/v4l2_m2m.c
++++ b/libavcodec/v4l2_m2m.c
+@@ -76,7 +76,9 @@ static int v4l2_prepare_contexts(V4L2m2mContext* s)
+     if (ret < 0)
+         return ret;
+ 
+-    av_log(s->avctx, AV_LOG_INFO, "driver '%s' on card '%s'\n", cap.driver, cap.card);
++    av_log(s->avctx, AV_LOG_INFO, "driver '%s' on card '%s' in %s mode\n", cap.driver, cap.card,
++                                   v4l2_mplane_video(&cap) ? "mplane" :
++                                   v4l2_splane_video(&cap) ? "splane" : "unknown");
+ 
+     if (v4l2_mplane_video(&cap)) {
+         s->capture.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+-- 
+2.21.0
+

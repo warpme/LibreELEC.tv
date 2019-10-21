@@ -1,0 +1,59 @@
+From 6a440796d81e9ed4b495a8f44028c4f49a7e9391 Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Thu, 22 Aug 2019 11:33:24 -0700
+Subject: [PATCH 31/59] avcodec/v4l2_m2m: disable info logging during device
+ probe
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/libavcodec/v4l2_m2m.c b/libavcodec/v4l2_m2m.c
+index 48104d01d2..0cf5db284a 100644
+--- a/libavcodec/v4l2_m2m.c
++++ b/libavcodec/v4l2_m2m.c
+@@ -60,7 +60,7 @@ static inline int v4l2_mplane_video(struct v4l2_capability *cap)
+     return 0;
+ }
+ 
+-static int v4l2_prepare_contexts(V4L2m2mContext* s)
++static int v4l2_prepare_contexts(V4L2m2mContext* s, int probe)
+ {
+     struct v4l2_capability cap;
+     int ret;
+@@ -76,9 +76,10 @@ static int v4l2_prepare_contexts(V4L2m2mContext* s)
+     if (ret < 0)
+         return ret;
+ 
+-    av_log(s->avctx, AV_LOG_INFO, "driver '%s' on card '%s' in %s mode\n", cap.driver, cap.card,
+-                                   v4l2_mplane_video(&cap) ? "mplane" :
+-                                   v4l2_splane_video(&cap) ? "splane" : "unknown");
++    av_log(s->avctx, probe ? AV_LOG_DEBUG : AV_LOG_INFO,
++                     "driver '%s' on card '%s' in %s mode\n", cap.driver, cap.card,
++                     v4l2_mplane_video(&cap) ? "mplane" :
++                     v4l2_splane_video(&cap) ? "splane" : "unknown");
+ 
+     if (v4l2_mplane_video(&cap)) {
+         s->capture.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+@@ -103,7 +104,7 @@ static int v4l2_probe_driver(V4L2m2mContext* s)
+     if (s->fd < 0)
+         return AVERROR(errno);
+ 
+-    ret = v4l2_prepare_contexts(s);
++    ret = v4l2_prepare_contexts(s, 1);
+     if (ret < 0)
+         goto done;
+ 
+@@ -140,7 +141,7 @@ static int v4l2_configure_contexts(V4L2m2mContext* s)
+     if (s->fd < 0)
+         return AVERROR(errno);
+ 
+-    ret = v4l2_prepare_contexts(s);
++    ret = v4l2_prepare_contexts(s, 0);
+     if (ret < 0)
+         goto error;
+ 
+-- 
+2.21.0
+

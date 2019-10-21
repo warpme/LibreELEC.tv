@@ -1,0 +1,37 @@
+From e2a963769a79254b8a4f87b7dfe90ef0812c5bf3 Mon Sep 17 00:00:00 2001
+From: Anton Leontiev <aleontiev@elvees.com>
+Date: Thu, 10 May 2018 18:31:20 +0300
+Subject: [PATCH 02/59] lavd/v4l2: Add ARGB and XRGB packed pixel formats
+
+Formats ARGB32, XRGB32, ABGR32, and XBGR32 were added to V4L2 instead
+of ill-defined deprecated RGB32/BGR32 pixel formats.
+
+When pixel format is not specified explicitly FFmpeg tries formats in
+order in which they are stored in the table. Therefore formats are
+sorted as follows: BGR is preferred over RGB and XBGR is preferred
+over ARGB, because it could give better performance by ignoring alpha
+component.
+---
+ libavdevice/v4l2-common.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/libavdevice/v4l2-common.c b/libavdevice/v4l2-common.c
+index 196c09b7fc..2d6bfac8ca 100644
+--- a/libavdevice/v4l2-common.c
++++ b/libavdevice/v4l2-common.c
+@@ -34,6 +34,12 @@ const struct fmt_map ff_fmt_conversion_table[] = {
+     { AV_PIX_FMT_RGB565BE,AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB565X },
+     { AV_PIX_FMT_BGR24,   AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_BGR24   },
+     { AV_PIX_FMT_RGB24,   AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB24   },
++#ifdef V4L2_PIX_FMT_XBGR32
++    { AV_PIX_FMT_BGR0,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_XBGR32  },
++    { AV_PIX_FMT_0RGB,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_XRGB32  },
++    { AV_PIX_FMT_BGRA,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_ABGR32  },
++    { AV_PIX_FMT_ARGB,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_ARGB32  },
++#endif
+     { AV_PIX_FMT_BGR0,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_BGR32   },
+     { AV_PIX_FMT_0RGB,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB32   },
+     { AV_PIX_FMT_GRAY8,   AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_GREY    },
+-- 
+2.21.0
+

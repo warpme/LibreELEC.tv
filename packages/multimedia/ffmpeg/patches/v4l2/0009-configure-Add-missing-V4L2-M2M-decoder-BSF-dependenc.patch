@@ -1,0 +1,33 @@
+From 2755ffa0a418eb9a915613ca9a8acaff0880d1e7 Mon Sep 17 00:00:00 2001
+From: Mark Thompson <sw@jkqxz.net>
+Date: Mon, 5 Nov 2018 14:22:10 +0000
+Subject: [PATCH 09/59] configure: Add missing V4L2 M2M decoder BSF
+ dependencies
+
+---
+ configure | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/configure b/configure
+index 95218a4544..69751a6c53 100755
+--- a/configure
++++ b/configure
+@@ -2928,6 +2928,7 @@ h264_rkmpp_decoder_select="h264_mp4toannexb_bsf"
+ h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
+ h264_vaapi_encoder_select="cbs_h264 vaapi_encode"
+ h264_v4l2m2m_decoder_deps="v4l2_m2m h264_v4l2_m2m"
++h264_v4l2m2m_decoder_select="h264_mp4toannexb_bsf"
+ h264_v4l2m2m_encoder_deps="v4l2_m2m h264_v4l2_m2m"
+ hevc_amf_encoder_deps="amf"
+ hevc_cuvid_decoder_deps="cuvid"
+@@ -2942,6 +2943,7 @@ hevc_rkmpp_decoder_select="hevc_mp4toannexb_bsf"
+ hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
+ hevc_vaapi_encoder_select="cbs_h265 vaapi_encode"
+ hevc_v4l2m2m_decoder_deps="v4l2_m2m hevc_v4l2_m2m"
++hevc_v4l2m2m_decoder_select="hevc_mp4toannexb_bsf"
+ hevc_v4l2m2m_encoder_deps="v4l2_m2m hevc_v4l2_m2m"
+ mjpeg_cuvid_decoder_deps="cuvid"
+ mjpeg_qsv_encoder_deps="libmfx"
+-- 
+2.21.0
+

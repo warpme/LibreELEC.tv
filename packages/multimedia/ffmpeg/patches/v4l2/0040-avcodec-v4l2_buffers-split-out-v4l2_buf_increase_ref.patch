@@ -1,0 +1,76 @@
+From 21f375a8a2617b1c8dbe98fdbd32fe6df4f9433e Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 28 Aug 2019 14:56:47 -0700
+Subject: [PATCH 40/59] avcodec/v4l2_buffers: split out v4l2_buf_increase_ref
+ helper
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_buffers.c | 36 +++++++++++++++++++++++-------------
+ 1 file changed, 23 insertions(+), 13 deletions(-)
+
+diff --git a/libavcodec/v4l2_buffers.c b/libavcodec/v4l2_buffers.c
+index 3e6ba6b9d3..2dccea09b4 100644
+--- a/libavcodec/v4l2_buffers.c
++++ b/libavcodec/v4l2_buffers.c
+@@ -228,27 +228,17 @@ static void v4l2_free_buffer(void *opaque, uint8_t *unused)
+     }
+ }
+ 
+-static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
++static int v4l2_buf_increase_ref(V4L2Buffer *in)
+ {
+     V4L2m2mContext *s = buf_to_m2mctx(in);
+ 
+-    if (plane >= in->num_planes)
+-        return AVERROR(EINVAL);
+-
+-    /* even though most encoders return 0 in data_offset encoding vp8 does require this value */
+-    *buf = av_buffer_create((char *)in->plane_info[plane].mm_addr + in->planes[plane].data_offset,
+-                            in->plane_info[plane].length, v4l2_free_buffer, in, 0);
+-    if (!*buf)
+-        return AVERROR(ENOMEM);
+-
+     if (in->context_ref)
+         atomic_fetch_add(&in->context_refcount, 1);
+     else {
+         in->context_ref = av_buffer_ref(s->self_ref);
+-        if (!in->context_ref) {
+-            av_buffer_unref(buf);
++        if (!in->context_ref)
+             return AVERROR(ENOMEM);
+-        }
++
+         in->context_refcount = 1;
+     }
+ 
+@@ -258,6 +248,26 @@ static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
+     return 0;
+ }
+ 
++static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
++{
++    int ret;
++
++    if (plane >= in->num_planes)
++        return AVERROR(EINVAL);
++
++    /* even though most encoders return 0 in data_offset encoding vp8 does require this value */
++    *buf = av_buffer_create((char *)in->plane_info[plane].mm_addr + in->planes[plane].data_offset,
++                            in->plane_info[plane].length, v4l2_free_buffer, in, 0);
++    if (!*buf)
++        return AVERROR(ENOMEM);
++
++    ret = v4l2_buf_increase_ref(in);
++    if (ret)
++        av_buffer_unref(buf);
++
++    return ret;
++}
++
+ static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, int size, int offset, AVBufferRef* bref)
+ {
+     unsigned int bytesused, length;
+-- 
+2.21.0
+

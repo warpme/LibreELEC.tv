@@ -1,0 +1,54 @@
+From 33baa3589527358f0febd9e10d9e3792b8f50711 Mon Sep 17 00:00:00 2001
+From: Stephan Hilb <stephan@ecshi.net>
+Date: Wed, 5 Jun 2019 22:04:38 +0200
+Subject: [PATCH 14/59] lavd/v4l2: produce a 0 byte packet when a dequeued
+ buffer's size is unexpected
+
+Behave like we do for V4L2_BUF_FLAG_ERROR, implemented in commit 28f20d2ff4 .
+
+For some devices (probably also related to the V4L driver implementation)
+it happens that when invoking the ioctl DQBUF, the returned buffer is not
+of the expected size. Here are two examples for such occurrences:
+
+    [video4linux2,v4l2 @ 0x258b440] Dequeued v4l2 buffer contains 609596 bytes, but 614400 were expected. Flags: 0x00000001.
+    /dev/video1: Invalid data found when processing input
+
+    [video4linux2,v4l2 @ 0x225f440] Dequeued v4l2 buffer contains 609508 bytes, but 614400 were expected. Flags: 0x00000001.
+    /dev/video1: Invalid data found when processing input
+
+For the ffmpeg CLI tool this means it will stop capturing and exit.
+
+The described behaviour was observed at least with one OmniVision USB
+web cam and with some stk1160 devices.
+
+If you search the web for the error message, you will find quite a few
+instances of this problem. Some of them experienced on other devices.
+
+Probably fixes ticket #4795
+
+Signed-off-by: Alexander Strasser <eclipse7@gmx.net>
+---
+ libavdevice/v4l2.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/libavdevice/v4l2.c b/libavdevice/v4l2.c
+index a9a0ed324d..446a243cf8 100644
+--- a/libavdevice/v4l2.c
++++ b/libavdevice/v4l2.c
+@@ -538,11 +538,10 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
+             s->frame_size = buf.bytesused;
+ 
+         if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
+-            av_log(ctx, AV_LOG_ERROR,
++            av_log(ctx, AV_LOG_WARNING,
+                    "Dequeued v4l2 buffer contains %d bytes, but %d were expected. Flags: 0x%08X.\n",
+                    buf.bytesused, s->frame_size, buf.flags);
+-            enqueue_buffer(s, &buf);
+-            return AVERROR_INVALIDDATA;
++            buf.bytesused = 0;
+         }
+     }
+ 
+-- 
+2.21.0
+

@@ -1,0 +1,31 @@
+From 558b0d86d553e6730e1cd6db5df614546980a7ed Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Thu, 22 Aug 2019 16:00:37 -0700
+Subject: [PATCH 20/59] avcodec/v4l2_m2m_enc: log errno on v4l2_set_ext_ctrl
+ failures
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m_enc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libavcodec/v4l2_m2m_enc.c b/libavcodec/v4l2_m2m_enc.c
+index 636e1a96dd..8b17f3696c 100644
+--- a/libavcodec/v4l2_m2m_enc.c
++++ b/libavcodec/v4l2_m2m_enc.c
+@@ -58,10 +58,10 @@ static inline void v4l2_set_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed
+ 
+     /* set ctrl*/
+     ctrl.value = value;
+-    ctrl.id = id ;
++    ctrl.id = id;
+ 
+     if (ioctl(s->fd, VIDIOC_S_EXT_CTRLS, &ctrls) < 0)
+-        av_log(s->avctx, AV_LOG_WARNING, "Failed to set %s\n", name);
++        av_log(s->avctx, AV_LOG_WARNING, "Failed to set %s: %s\n", name, strerror(errno));
+     else
+         av_log(s->avctx, AV_LOG_DEBUG, "Encoder: %s = %d\n", name, value);
+ }
+-- 
+2.21.0
+

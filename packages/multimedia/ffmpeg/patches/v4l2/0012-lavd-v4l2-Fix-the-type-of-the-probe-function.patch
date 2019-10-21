@@ -1,0 +1,25 @@
+From 444a153b3f259932f73edf002a3c5f7f8566171c Mon Sep 17 00:00:00 2001
+From: Carl Eugen Hoyos <ceffmpeg@gmail.com>
+Date: Sat, 23 Mar 2019 23:42:09 +0100
+Subject: [PATCH 12/59] lavd/v4l2: Fix the type of the probe function.
+
+---
+ libavdevice/v4l2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libavdevice/v4l2.c b/libavdevice/v4l2.c
+index 1b9c6e760b..a9a0ed324d 100644
+--- a/libavdevice/v4l2.c
++++ b/libavdevice/v4l2.c
+@@ -816,7 +816,7 @@ static int device_try_init(AVFormatContext *ctx,
+     return ret;
+ }
+ 
+-static int v4l2_read_probe(AVProbeData *p)
++static int v4l2_read_probe(const AVProbeData *p)
+ {
+     if (av_strstart(p->filename, "/dev/video", NULL))
+         return AVPROBE_SCORE_MAX - 1;
+-- 
+2.21.0
+

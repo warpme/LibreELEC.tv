@@ -1,0 +1,70 @@
+From 894179bc5453d7c3784915bad189ebb85b623420 Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Tue, 27 Aug 2019 11:59:50 -0700
+Subject: [PATCH 36/59] avcodec/v4l2_m2m_enc: fix indentation and add
+ M2MENC_CLASS macro
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m_enc.c | 44 ++++++++++++++++++++-------------------
+ 1 file changed, 23 insertions(+), 21 deletions(-)
+
+diff --git a/libavcodec/v4l2_m2m_enc.c b/libavcodec/v4l2_m2m_enc.c
+index 8014e442a8..4849bc26c5 100644
+--- a/libavcodec/v4l2_m2m_enc.c
++++ b/libavcodec/v4l2_m2m_enc.c
+@@ -332,28 +332,30 @@ static const AVOption options[] = {
+     { NULL },
+ };
+ 
++#define M2MENC_CLASS(NAME) \
++    static const AVClass v4l2_m2m_ ## NAME ## _enc_class = { \
++        .class_name = #NAME "_v4l2m2m_encoder", \
++        .item_name  = av_default_item_name, \
++        .option     = options, \
++        .version    = LIBAVUTIL_VERSION_INT, \
++    };
++
+ #define M2MENC(NAME, LONGNAME, CODEC) \
+-static const AVClass v4l2_m2m_ ## NAME ## _enc_class = {\
+-    .class_name = #NAME "_v4l2_m2m_encoder",\
+-    .item_name  = av_default_item_name,\
+-    .option     = options,\
+-    .version    = LIBAVUTIL_VERSION_INT,\
+-};\
+-\
+-AVCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
+-    .name           = #NAME "_v4l2m2m" ,\
+-    .long_name      = NULL_IF_CONFIG_SMALL("V4L2 mem2mem " LONGNAME " encoder wrapper"),\
+-    .type           = AVMEDIA_TYPE_VIDEO,\
+-    .id             = CODEC ,\
+-    .priv_data_size = sizeof(V4L2m2mPriv),\
+-    .priv_class     = &v4l2_m2m_ ## NAME ##_enc_class,\
+-    .init           = v4l2_encode_init,\
+-    .send_frame     = v4l2_send_frame,\
+-    .receive_packet = v4l2_receive_packet,\
+-    .close          = v4l2_encode_close,\
+-    .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
+-    .wrapper_name   = "v4l2m2m", \
+-};
++    M2MENC_CLASS(NAME) \
++    AVCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
++        .name           = #NAME "_v4l2m2m" , \
++        .long_name      = NULL_IF_CONFIG_SMALL("V4L2 mem2mem " LONGNAME " encoder wrapper"), \
++        .type           = AVMEDIA_TYPE_VIDEO, \
++        .id             = CODEC , \
++        .priv_data_size = sizeof(V4L2m2mPriv), \
++        .priv_class     = &v4l2_m2m_ ## NAME ##_enc_class, \
++        .init           = v4l2_encode_init, \
++        .send_frame     = v4l2_send_frame, \
++        .receive_packet = v4l2_receive_packet, \
++        .close          = v4l2_encode_close, \
++        .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
++        .wrapper_name   = "v4l2m2m", \
++    };
+ 
+ M2MENC(mpeg4,"MPEG4", AV_CODEC_ID_MPEG4);
+ M2MENC(h263, "H.263", AV_CODEC_ID_H263);
+-- 
+2.21.0
+

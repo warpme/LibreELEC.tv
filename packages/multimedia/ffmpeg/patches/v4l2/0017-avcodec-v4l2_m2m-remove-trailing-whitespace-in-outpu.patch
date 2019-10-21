@@ -1,0 +1,27 @@
+From fe914a402732c01e467185df0fc62a2d56990c82 Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Thu, 22 Aug 2019 12:20:40 -0700
+Subject: [PATCH 17/59] avcodec/v4l2_m2m: remove trailing whitespace in output
+ identifier
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libavcodec/v4l2_m2m.c b/libavcodec/v4l2_m2m.c
+index cc8de7b6f4..626ccb2f7b 100644
+--- a/libavcodec/v4l2_m2m.c
++++ b/libavcodec/v4l2_m2m.c
+@@ -67,7 +67,7 @@ static int v4l2_prepare_contexts(V4L2m2mContext* s)
+ 
+     s->capture.done = s->output.done = 0;
+     s->capture.name = "capture";
+-    s->output.name = "output ";
++    s->output.name = "output";
+     atomic_init(&s->refcount, 0);
+     sem_init(&s->refsync, 0, 0);
+ 
+-- 
+2.21.0
+

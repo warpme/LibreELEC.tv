@@ -1,0 +1,69 @@
+From 40ae628416875048cc73e9b8071ecd2954cbd344 Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Thu, 12 Sep 2019 10:23:16 -0700
+Subject: [PATCH 48/59] avcodec/v4l2_m2m_dec: remove temporary avpkt and read
+ directly into buffer
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m_dec.c | 21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
+
+diff --git a/libavcodec/v4l2_m2m_dec.c b/libavcodec/v4l2_m2m_dec.c
+index 0c3fa3a7be..d79a2e5842 100644
+--- a/libavcodec/v4l2_m2m_dec.c
++++ b/libavcodec/v4l2_m2m_dec.c
+@@ -131,14 +131,10 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     V4L2m2mContext *s = ((V4L2m2mPriv*)avctx->priv_data)->context;
+     V4L2Context *const capture = &s->capture;
+     V4L2Context *const output = &s->output;
+-    AVPacket avpkt = {0};
+     int ret;
+ 
+-    if (s->buf_pkt.size) {
+-        avpkt = s->buf_pkt;
+-        memset(&s->buf_pkt, 0, sizeof(AVPacket));
+-    } else {
+-        ret = ff_decode_get_packet(avctx, &avpkt);
++    if (!s->buf_pkt.size) {
++        ret = ff_decode_get_packet(avctx, &s->buf_pkt);
+         if (ret < 0 && ret != AVERROR_EOF)
+             return ret;
+     }
+@@ -146,20 +142,17 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     if (s->draining)
+         goto dequeue;
+ 
+-    ret = ff_v4l2_context_enqueue_packet(output, &avpkt);
++    ret = ff_v4l2_context_enqueue_packet(output, &s->buf_pkt);
++    if (ret != AVERROR(EAGAIN))
++        av_packet_unref(&s->buf_pkt);
+     if (ret < 0) {
+         if (ret != AVERROR(EAGAIN))
+            return ret;
+ 
+-        s->buf_pkt = avpkt;
+         /* no input buffers available, continue dequeing */
+-    }
+-
+-    if (avpkt.size) {
++    } else {
+         ret = v4l2_try_start(avctx);
+         if (ret) {
+-            av_packet_unref(&avpkt);
+-
+             /* cant recover */
+             if (ret == AVERROR(ENOMEM))
+                 return ret;
+@@ -169,8 +162,6 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     }
+ 
+ dequeue:
+-    if (!s->buf_pkt.size)
+-        av_packet_unref(&avpkt);
+     return ff_v4l2_context_dequeue_frame(capture, frame, -1);
+ }
+ 
+-- 
+2.21.0
+

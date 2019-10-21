@@ -1,0 +1,38 @@
+From c646d856fcabc99ea324696ac1e35636becd7aa3 Mon Sep 17 00:00:00 2001
+From: Carl Eugen Hoyos <ceffmpeg@gmail.com>
+Date: Fri, 31 Aug 2018 00:43:17 +0200
+Subject: [PATCH 07/59] lavc/v4l2_m2m_enc: Add missing braces around
+ initializers.
+
+Fixes the following warnings:
+libavcodec/v4l2_m2m_enc.c:51:12: warning: missing braces around initializer
+libavcodec/v4l2_m2m_enc.c:71:12: warning: missing braces around initializer
+---
+ libavcodec/v4l2_m2m_enc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libavcodec/v4l2_m2m_enc.c b/libavcodec/v4l2_m2m_enc.c
+index 4c9ea1fd92..636e1a96dd 100644
+--- a/libavcodec/v4l2_m2m_enc.c
++++ b/libavcodec/v4l2_m2m_enc.c
+@@ -48,7 +48,7 @@ static inline void v4l2_set_timeperframe(V4L2m2mContext *s, unsigned int num, un
+ 
+ static inline void v4l2_set_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed int value, const char *name)
+ {
+-    struct v4l2_ext_controls ctrls = { 0 };
++    struct v4l2_ext_controls ctrls = { { 0 } };
+     struct v4l2_ext_control ctrl = { 0 };
+ 
+     /* set ctrls */
+@@ -68,7 +68,7 @@ static inline void v4l2_set_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed
+ 
+ static inline int v4l2_get_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed int *value, const char *name)
+ {
+-    struct v4l2_ext_controls ctrls = { 0 };
++    struct v4l2_ext_controls ctrls = { { 0 } };
+     struct v4l2_ext_control ctrl = { 0 };
+     int ret;
+ 
+-- 
+2.21.0
+

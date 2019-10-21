@@ -1,0 +1,28 @@
+From d2bb1513bbbae56da18f0ec8af695a89ccbe0d26 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Mon, 8 Jan 2018 15:27:37 -0800
+Subject: [PATCH 23/59] avcodec/v4l2_buffers: return int64_t in v4l2_get_pts
+
+v4l2_pts is type int64_t we should return that instead of uint64_t
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_buffers.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libavcodec/v4l2_buffers.c b/libavcodec/v4l2_buffers.c
+index 4f889509f9..51b0d25cad 100644
+--- a/libavcodec/v4l2_buffers.c
++++ b/libavcodec/v4l2_buffers.c
+@@ -62,7 +62,7 @@ static inline void v4l2_set_pts(V4L2Buffer *out, int64_t pts)
+     out->buf.timestamp.tv_sec = v4l2_pts / USEC_PER_SEC;
+ }
+ 
+-static inline uint64_t v4l2_get_pts(V4L2Buffer *avbuf)
++static inline int64_t v4l2_get_pts(V4L2Buffer *avbuf)
+ {
+     V4L2m2mContext *s = buf_to_m2mctx(avbuf);
+     AVRational v4l2_timebase = { 1, USEC_PER_SEC };
+-- 
+2.21.0
+

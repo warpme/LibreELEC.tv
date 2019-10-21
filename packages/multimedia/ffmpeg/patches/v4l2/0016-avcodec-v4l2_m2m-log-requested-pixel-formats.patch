@@ -1,0 +1,42 @@
+From 8ee91442934bd1999668b0140652e97d13e49977 Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Thu, 22 Aug 2019 12:06:24 -0700
+Subject: [PATCH 16/59] avcodec/v4l2_m2m: log requested pixel formats
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/libavcodec/v4l2_m2m.c b/libavcodec/v4l2_m2m.c
+index ac583c811f..cc8de7b6f4 100644
+--- a/libavcodec/v4l2_m2m.c
++++ b/libavcodec/v4l2_m2m.c
+@@ -132,6 +132,7 @@ static int v4l2_configure_contexts(V4L2m2mContext* s)
+ {
+     void *log_ctx = s->avctx;
+     int ret;
++    struct v4l2_format ofmt, cfmt;
+ 
+     s->fd = open(s->devname, O_RDWR | O_NONBLOCK, 0);
+     if (s->fd < 0)
+@@ -141,6 +142,16 @@ static int v4l2_configure_contexts(V4L2m2mContext* s)
+     if (ret < 0)
+         goto error;
+ 
++    ofmt = s->output.format;
++    cfmt = s->capture.format;
++    av_log(log_ctx, AV_LOG_INFO, "requesting formats: output=%s capture=%s\n",
++                                 av_fourcc2str(V4L2_TYPE_IS_MULTIPLANAR(ofmt.type) ?
++                                               ofmt.fmt.pix_mp.pixelformat :
++                                               ofmt.fmt.pix.pixelformat),
++                                 av_fourcc2str(V4L2_TYPE_IS_MULTIPLANAR(cfmt.type) ?
++                                               cfmt.fmt.pix_mp.pixelformat :
++                                               cfmt.fmt.pix.pixelformat));
++
+     ret = ff_v4l2_context_set_format(&s->output);
+     if (ret) {
+         av_log(log_ctx, AV_LOG_ERROR, "can't set v4l2 output format\n");
+-- 
+2.21.0
+

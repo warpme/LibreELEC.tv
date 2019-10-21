@@ -1,0 +1,27 @@
+From ccddbdf614596bffe8a4e38af458a65d79f4d5bb Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Mon, 21 Oct 2019 11:43:53 -0700
+Subject: [PATCH 58/59] configure: fix check_header -> check_headers change
+
+---
+ configure | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configure b/configure
+index 62768b2244..e24b05913f 100755
+--- a/configure
++++ b/configure
+@@ -6221,8 +6221,8 @@ rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || d
+ 
+ # check V4L2 codecs available in the API
+ if enabled v4l2_m2m; then
+-    check_headers linux/fb.h
+-    check_headers linux/videodev2.h
++    check_header linux/fb.h
++    check_header linux/videodev2.h
+     test_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
+     check_cc v4l2_m2m linux/videodev2.h "int i = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_VIDEO_M2M | V4L2_BUF_FLAG_LAST;"
+     check_cc vc1_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VC1_ANNEX_G;"
+-- 
+2.21.0
+

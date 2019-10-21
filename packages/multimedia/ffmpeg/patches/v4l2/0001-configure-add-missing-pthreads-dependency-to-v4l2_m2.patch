@@ -1,0 +1,26 @@
+From e9e9675ef190611b03954894399f86f088da9eec Mon Sep 17 00:00:00 2001
+From: James Almer <jamrial@gmail.com>
+Date: Sun, 29 Apr 2018 15:04:10 -0300
+Subject: [PATCH 01/59] configure: add missing pthreads dependency to v4l2_m2m
+
+Signed-off-by: James Almer <jamrial@gmail.com>
+---
+ configure | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure b/configure
+index 15e6c321b1..95218a4544 100755
+--- a/configure
++++ b/configure
+@@ -2898,7 +2898,7 @@ qsvdec_select="qsv"
+ qsvenc_select="qsv"
+ qsvvpp_select="qsv"
+ vaapi_encode_deps="vaapi"
+-v4l2_m2m_deps_any="linux_videodev2_h"
++v4l2_m2m_deps="linux_videodev2_h sem_timedwait"
+ 
+ hwupload_cuda_filter_deps="ffnvcodec"
+ scale_npp_filter_deps="ffnvcodec libnpp"
+-- 
+2.21.0
+

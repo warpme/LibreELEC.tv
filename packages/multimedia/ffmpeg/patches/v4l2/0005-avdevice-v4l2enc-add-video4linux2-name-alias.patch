@@ -1,0 +1,28 @@
+From 92ad0076455509c433c9544d177ab189f510cb7f Mon Sep 17 00:00:00 2001
+From: Lou Logan <lou@lrcd.com>
+Date: Thu, 14 Jun 2018 13:12:27 -0800
+Subject: [PATCH 05/59] avdevice/v4l2enc: add video4linux2 name alias
+
+Makes the v4l2 outdev name consistent with the v4l2 indev name.
+
+Signed-off-by: Lou Logan <lou@lrcd.com>
+---
+ libavdevice/v4l2enc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libavdevice/v4l2enc.c b/libavdevice/v4l2enc.c
+index 85200d0a36..1c36f81f90 100644
+--- a/libavdevice/v4l2enc.c
++++ b/libavdevice/v4l2enc.c
+@@ -106,7 +106,7 @@ static const AVClass v4l2_class = {
+ };
+ 
+ AVOutputFormat ff_v4l2_muxer = {
+-    .name           = "v4l2",
++    .name           = "video4linux2,v4l2",
+     .long_name      = NULL_IF_CONFIG_SMALL("Video4Linux2 output device"),
+     .priv_data_size = sizeof(V4L2Context),
+     .audio_codec    = AV_CODEC_ID_NONE,
+-- 
+2.21.0
+

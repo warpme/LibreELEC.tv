@@ -1,0 +1,29 @@
+From 39833f5b11a36d7568d07e13da6d4c801a15d54b Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Thu, 22 Aug 2019 12:20:56 -0700
+Subject: [PATCH 18/59] avcodec/v4l2_context: log VIDIOC_REQBUFS failures
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_context.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/libavcodec/v4l2_context.c b/libavcodec/v4l2_context.c
+index efcb0426e4..4958c634bf 100644
+--- a/libavcodec/v4l2_context.c
++++ b/libavcodec/v4l2_context.c
+@@ -678,8 +678,10 @@ int ff_v4l2_context_init(V4L2Context* ctx)
+     req.memory = V4L2_MEMORY_MMAP;
+     req.type = ctx->type;
+     ret = ioctl(s->fd, VIDIOC_REQBUFS, &req);
+-    if (ret < 0)
++    if (ret < 0) {
++        av_log(logger(ctx), AV_LOG_ERROR, "%s VIDIOC_REQBUFS failed: %s\n", ctx->name, strerror(errno));
+         return AVERROR(errno);
++    }
+ 
+     ctx->num_buffers = req.count;
+     ctx->buffers = av_mallocz(ctx->num_buffers * sizeof(V4L2Buffer));
+-- 
+2.21.0
+

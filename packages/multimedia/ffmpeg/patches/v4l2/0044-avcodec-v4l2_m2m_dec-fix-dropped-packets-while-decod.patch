@@ -1,0 +1,86 @@
+From e2418d01b4b24a76c53603edc27dcfa2a6a0a7bd Mon Sep 17 00:00:00 2001
+From: Maxime Jourdan <mjourdan@baylibre.com>
+Date: Fri, 30 Aug 2019 11:34:52 -0700
+Subject: [PATCH 44/59] avcodec/v4l2_m2m_dec: fix dropped packets while
+ decoding
+
+* FFmpeg retrieves a packet from the bitstream
+* It attempts to get an input buffer (from its own list or by dequeuing one from the driver)
+* If no input buffer is found, the bitstream packet is dropped instead of scheduled for trying again later
+
+It's an issue that showed especially at high speeds (like using `-f null -` as output parameters).
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_m2m.h     |  1 +
+ libavcodec/v4l2_m2m_dec.c | 21 ++++++++++++++++-----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/libavcodec/v4l2_m2m.h b/libavcodec/v4l2_m2m.h
+index c860e96ef5..456281f48c 100644
+--- a/libavcodec/v4l2_m2m.h
++++ b/libavcodec/v4l2_m2m.h
+@@ -56,6 +56,7 @@ typedef struct V4L2m2mContext {
+ 
+     /* null frame/packet received */
+     int draining;
++    AVPacket buf_pkt;
+ 
+     /* Reference to self; only valid while codec is active. */
+     AVBufferRef *self_ref;
+diff --git a/libavcodec/v4l2_m2m_dec.c b/libavcodec/v4l2_m2m_dec.c
+index 686e130387..d0f1c41f9d 100644
+--- a/libavcodec/v4l2_m2m_dec.c
++++ b/libavcodec/v4l2_m2m_dec.c
+@@ -133,9 +133,14 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     AVPacket avpkt = {0};
+     int ret;
+ 
+-    ret = ff_decode_get_packet(avctx, &avpkt);
+-    if (ret < 0 && ret != AVERROR_EOF)
+-        return ret;
++    if (s->buf_pkt.size) {
++        avpkt = s->buf_pkt;
++        memset(&s->buf_pkt, 0, sizeof(AVPacket));
++    } else {
++        ret = ff_decode_get_packet(avctx, &avpkt);
++        if (ret < 0 && ret != AVERROR_EOF)
++            return ret;
++    }
+ 
+     if (s->draining)
+         goto dequeue;
+@@ -144,6 +149,8 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     if (ret < 0) {
+         if (ret != AVERROR(EAGAIN))
+            return ret;
++
++        s->buf_pkt = avpkt;
+         /* no input buffers available, continue dequeing */
+     }
+ 
+@@ -161,7 +168,8 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     }
+ 
+ dequeue:
+-    av_packet_unref(&avpkt);
++    if (!s->buf_pkt.size)
++        av_packet_unref(&avpkt);
+     return ff_v4l2_context_dequeue_frame(capture, frame, -1);
+ }
+ 
+@@ -207,7 +215,10 @@ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
+ 
+ static av_cold int v4l2_decode_close(AVCodecContext *avctx)
+ {
+-    return ff_v4l2_m2m_codec_end(avctx->priv_data);
++    V4L2m2mPriv *priv = avctx->priv_data;
++    V4L2m2mContext* s = priv->context;
++    av_packet_unref(&s->buf_pkt);
++    return ff_v4l2_m2m_codec_end(priv);
+ }
+ 
+ #define OFFSET(x) offsetof(V4L2m2mPriv, x)
+-- 
+2.21.0
+

@@ -1,0 +1,41 @@
+From 6f4832e764f6bfae7919e92d902c39f4a207ffe7 Mon Sep 17 00:00:00 2001
+From: Dave Stevenson <dave.stevenson@raspberrypi.org>
+Date: Thu, 22 Mar 2018 16:01:35 +0000
+Subject: [PATCH 33/59] avcodec/v4l2_buffers: Add handling for NV21 and YUV420P
+
+The single planar support was for NV12 only.
+Add NV21 and YUV420P support.
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_buffers.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/libavcodec/v4l2_buffers.c b/libavcodec/v4l2_buffers.c
+index 51b0d25cad..de72b7f80c 100644
+--- a/libavcodec/v4l2_buffers.c
++++ b/libavcodec/v4l2_buffers.c
+@@ -321,11 +321,20 @@ int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *avbuf)
+     /* 1.1 fixup special cases */
+     switch (avbuf->context->av_pix_fmt) {
+     case AV_PIX_FMT_NV12:
++    case AV_PIX_FMT_NV21:
+         if (avbuf->num_planes > 1)
+             break;
+         frame->linesize[1] = avbuf->plane_info[0].bytesperline;
+         frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
+         break;
++    case AV_PIX_FMT_YUV420P:
++        if (avbuf->num_planes > 1)
++            break;
++        frame->linesize[1] = avbuf->plane_info[0].bytesperline >> 1;
++        frame->linesize[2] = avbuf->plane_info[0].bytesperline >> 1;
++        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
++        frame->data[2] = frame->data[1] + ((avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height) >> 2);
++        break;
+     default:
+         break;
+     }
+-- 
+2.21.0
+

@@ -1,0 +1,30 @@
+From 95817bac6758bb5403375653003361e8856a3eaa Mon Sep 17 00:00:00 2001
+From: Carl Eugen Hoyos <ceffmpeg@gmail.com>
+Date: Thu, 6 Dec 2018 23:34:54 +0100
+Subject: [PATCH 10/59] lavd/v4l2: Use "int request" as second parameter for
+ ioctl() on Android.
+
+Fixes build with new Android toolchain.
+---
+ libavdevice/v4l2.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/libavdevice/v4l2.c b/libavdevice/v4l2.c
+index 10a0ff0dd6..1b9c6e760b 100644
+--- a/libavdevice/v4l2.c
++++ b/libavdevice/v4l2.c
+@@ -95,7 +95,11 @@ struct video_data {
+     int (*open_f)(const char *file, int oflag, ...);
+     int (*close_f)(int fd);
+     int (*dup_f)(int fd);
++#ifdef __GLIBC__
+     int (*ioctl_f)(int fd, unsigned long int request, ...);
++#else
++    int (*ioctl_f)(int fd, int request, ...);
++#endif
+     ssize_t (*read_f)(int fd, void *buffer, size_t n);
+     void *(*mmap_f)(void *start, size_t length, int prot, int flags, int fd, int64_t offset);
+     int (*munmap_f)(void *_start, size_t length);
+-- 
+2.21.0
+

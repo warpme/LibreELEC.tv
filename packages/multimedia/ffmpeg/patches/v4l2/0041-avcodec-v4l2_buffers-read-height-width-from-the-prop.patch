@@ -1,0 +1,46 @@
+From dcbda9232451a9a9cd5e2a1b7517fcea12ec2713 Mon Sep 17 00:00:00 2001
+From: Aman Gupta <aman@tmm1.net>
+Date: Fri, 30 Aug 2019 14:02:48 -0700
+Subject: [PATCH 41/59] avcodec/v4l2_buffers: read height/width from the proper
+ context
+
+Frames are generally dequeued into capture buffers, so using
+the output properties here was incorrect. It happened to work
+fine for decoding, since the output/capture buffers have the same
+dimensions.
+
+For the v4l2 scaler, the dimensions can be different between output
+and capture. Using the buffer's associated context makes this code
+work correctly regardless of where the frame is coming from.
+
+Signed-off-by: Aman Gupta <aman@tmm1.net>
+---
+ libavcodec/v4l2_buffers.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/libavcodec/v4l2_buffers.c b/libavcodec/v4l2_buffers.c
+index 2dccea09b4..0726dc121b 100644
+--- a/libavcodec/v4l2_buffers.c
++++ b/libavcodec/v4l2_buffers.c
+@@ -404,7 +404,6 @@ int ff_v4l2_buffer_avframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
+ 
+ int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *avbuf)
+ {
+-    V4L2m2mContext *s = buf_to_m2mctx(avbuf);
+     int ret;
+ 
+     av_frame_unref(frame);
+@@ -423,8 +422,8 @@ int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *avbuf)
+     frame->pts = v4l2_get_pts(avbuf);
+ 
+     /* these two values are updated also during re-init in v4l2_process_driver_event */
+-    frame->height = s->output.height;
+-    frame->width = s->output.width;
++    frame->height = avbuf->context->height;
++    frame->width = avbuf->context->width;
+ 
+     /* 3. report errors upstream */
+     if (avbuf->buf.flags & V4L2_BUF_FLAG_ERROR) {
+-- 
+2.21.0
+

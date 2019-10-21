@@ -1,0 +1,26 @@
+From 2a62d0072381012d38224aff8c14fc51205f0baf Mon Sep 17 00:00:00 2001
+From: Carl Eugen Hoyos <ceffmpeg@gmail.com>
+Date: Thu, 21 Mar 2019 01:24:42 +0100
+Subject: [PATCH 11/59] lavd/v4l2-common: Add an entry for Z16.
+
+---
+ libavdevice/v4l2-common.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/libavdevice/v4l2-common.c b/libavdevice/v4l2-common.c
+index 2d6bfac8ca..b5b4448a31 100644
+--- a/libavdevice/v4l2-common.c
++++ b/libavdevice/v4l2-common.c
+@@ -45,6 +45,9 @@ const struct fmt_map ff_fmt_conversion_table[] = {
+     { AV_PIX_FMT_GRAY8,   AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_GREY    },
+ #ifdef V4L2_PIX_FMT_Y16
+     { AV_PIX_FMT_GRAY16LE,AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_Y16     },
++#endif
++#ifdef V4L2_PIX_FMT_Z16
++    { AV_PIX_FMT_GRAY16LE,AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_Z16     },
+ #endif
+     { AV_PIX_FMT_NV12,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_NV12    },
+     { AV_PIX_FMT_NONE,    AV_CODEC_ID_MJPEG,    V4L2_PIX_FMT_MJPEG   },
+-- 
+2.21.0
+
